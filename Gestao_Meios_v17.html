@@ -3478,10 +3478,23 @@ function updateClock(){
 setInterval(updateClock,1000);
 updateClock();
 
-// Auto-refresh time bars every 60 seconds
-setInterval(()=>{
-  if(document.getElementById('page-detalhe').classList.contains('active')) renderTeams();
-},60000);
+// ── Auto-refresh: re-fetch do servidor e re-render ───────────────
+// Corre a cada 30 s e também quando o utilizador volta ao tab/app
+async function _autoRefresh(){
+  if(!isOnline || isSyncing) return;
+  await loadAllData();
+  await cacheToIDB();
+  if(document.getElementById('page-detalhe').classList.contains('active')){
+    renderTeams();
+    if(document.getElementById('tl-panel')?.style.display !== 'none') loadTimeline();
+  } else {
+    renderOcorrencias();
+  }
+}
+setInterval(_autoRefresh, 30_000);
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible') _autoRefresh();
+});
 
 // ══════════════════════════════════════════════════════════════════
 //  INIT
