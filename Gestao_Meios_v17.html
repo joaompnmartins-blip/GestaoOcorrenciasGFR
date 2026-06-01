@@ -470,6 +470,7 @@
   .tl-cat-comunicacoes    {background:rgba(152,112,208,.12);color:#b890e8;}
   .tl-cat-atividade_icnf  {background:rgba(66,154,189,.10);color:var(--icnf-blue-light);}
   .tl-cat-atividade_outros{background:rgba(77,102,80,.3);color:var(--muted);}
+  .tl-cat-outros          {background:rgba(45,61,47,.5);color:var(--muted);}
   .tl-titulo{font-size:12px;color:var(--text);line-height:1.5;vertical-align:middle;}
   .tl-meta{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--inactive);margin-top:3px;}
   .tl-meta-meio{color:var(--accent3);margin-left:5px;}
@@ -1192,6 +1193,7 @@
           <option value="comunicacoes">📡 Comunicações</option>
           <option value="atividade_icnf">🏛️ Atividade ICNF</option>
           <option value="atividade_outros">👥 Atividade Outros</option>
+          <option value="outros">📝 Outros</option>
         </select>
       </div>
     </div>
@@ -3835,6 +3837,7 @@ const TL_CATS = {
   comunicacoes:     { icon:'📡', label:'Comunicações' },
   atividade_icnf:   { icon:'🏛️', label:'Atividade ICNF' },
   atividade_outros: { icon:'👥', label:'Atividade Outros' },
+  outros:           { icon:'📝', label:'Outros' },
 };
 
 let _tlData = [];
@@ -3999,6 +4002,7 @@ const TL_FORMS = {
   comunicacoes:    `<div class="form-field"><label class="form-label">Comunicação</label><textarea class="form-textarea" id="tlf-texto" rows="5" placeholder="Ex: CDOS Aveiro — Pedido de reforço com 1 HELICANADA aprovado."></textarea></div>`,
   atividade_icnf:  `<div class="form-field"><label class="form-label">Atividade ICNF</label><textarea class="form-textarea" id="tlf-texto" rows="5" placeholder="Ex: Reconhecimento do perímetro pelo Chefe de Grupo. Fogo controlado no flanco E."></textarea></div>`,
   atividade_outros:`<div class="form-field"><label class="form-label">Atividade de Outros</label><textarea class="form-textarea" id="tlf-texto" rows="5" placeholder="Ex: GNR interdita EN17 em ambos os sentidos. PSP reforça perímetro."></textarea></div>`,
+  outros:          `<div class="form-field"><label class="form-label">Registo</label><textarea class="form-textarea" id="tlf-texto" rows="5" placeholder="Texto livre…"></textarea></div>`,
 };
 
 function openAddTimeline(){
