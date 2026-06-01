@@ -133,8 +133,16 @@ app.get('/api/ocorrencias', requireAuth('tecnico'), wrap(async (req, res) => {
   if (role === 'administrador' || (role === 'dradj_cnsr' && !subregiao)) {
     q = 'SELECT * FROM ocorrencias ORDER BY created_at DESC';
   } else if (role === 'dradj_cnsr') {
-    q = 'SELECT * FROM ocorrencias WHERE subregiao=$1 ORDER BY created_at DESC';
-    params = [subregiao];
+    // Sub-região própria + OL nomeado por admin em outras sub-regiões
+    q = `SELECT *,
+           EXISTS(SELECT 1 FROM ocorrencia_oficiais_ligacao
+                  WHERE ocorrencia_id = id AND utilizador_id = $1) AS is_oficial_ligacao
+         FROM ocorrencias
+         WHERE ${subregiao ? 'subregiao=$2 OR ' : ''}id IN (
+           SELECT ocorrencia_id FROM ocorrencia_oficiais_ligacao WHERE utilizador_id=$1
+         )
+         ORDER BY created_at DESC`;
+    params = subregiao ? [userId, subregiao] : [userId];
   } else {
     // tecnico e operacional: sub-região + OL + meios onde estão listados
     // inclui is_oficial_ligacao para o frontend destacar as ocorrências OL
@@ -397,11 +405,11 @@ app.delete('/api/operacionais/:id', requireAuth('dradj_cnsr'), wrap(async (req, 
 // ══════════════════════════════════════════════════════════════════
 //  UTILIZADORES (admin only)
 // ══════════════════════════════════════════════════════════════════
-// Utilizadores de campo (tecnico + operacional) — acessível a dradj_cnsr para associar aos meios
+// Utilizadores nomeáveis como OL ou operativos — acessível a dradj_cnsr+
 app.get('/api/utilizadores/tecnicos', requireAuth('dradj_cnsr'), wrap(async (req, res) => {
   const { rows } = await pool.query(
     `SELECT id, nome, email, role FROM utilizadores
-     WHERE role IN ('tecnico','operacional') AND ativo = true
+     WHERE role IN ('tecnico','operacional','dradj_cnsr') AND ativo = true
      ORDER BY nome`
   );
   res.json(rows);

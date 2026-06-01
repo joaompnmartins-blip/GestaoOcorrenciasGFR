@@ -2019,7 +2019,7 @@ function occCardHtml(o){
         <span class="badge badge-active pulse">● ATIVA</span>
         ${o.subregiao?`<span class="badge badge-y" style="font-size:9px">${esc(o.subregiao)}</span>`:''}
         ${o.concelho?`<span class="badge badge-info">${esc(o.concelho)}</span>`:''}
-        ${o.isOL&&currentRole==='tecnico'?`<span class="badge badge-warn" style="font-size:9px">⚡ Ofic. Ligação</span>`:''}
+        ${o.isOL?`<span class="badge badge-warn" style="font-size:9px">⚡ Ofic. Ligação</span>`:''}
         ${urgent?`<span class="badge badge-danger pulse">⚠ ${urgent} limite</span>`:''}
       </div>
     </div>
@@ -2293,7 +2293,7 @@ function openDetalhe(id){
   if(!o) return;
   const isClosed = o.status==='closed';
   // Calcular nível efectivo: técnico só tem poderes de gestor se for OL nesta ocorrência
-  currentOccIsOL = currentRole==='tecnico' && !!o.isOL;
+  currentOccIsOL = ['tecnico','dradj_cnsr'].includes(currentRole) && !!o.isOL;
   document.getElementById('bc-nome').textContent=o.nome+(o.ref?' — Cód. '+o.ref:'');
   document.getElementById('d-id').textContent=o.ref||o.id;
   document.getElementById('d-nome').textContent=o.nome;
@@ -3959,7 +3959,7 @@ async function loadOficiaisLigacao(){
   // Carregar técnicos disponíveis para o selector (só se ainda não carregados)
   if(!_tecnicos.length){
     const { data } = await apiFetch('/api/utilizadores/tecnicos');
-    _tecnicos = (data||[]).filter(u => u.role === 'tecnico');
+    _tecnicos = (data||[]).filter(u => ['tecnico','dradj_cnsr'].includes(u.role));
     const sel = document.getElementById('ofic-select');
     sel.innerHTML = '<option value="">— Selecionar Técnico —</option>' +
       _tecnicos.map(u => `<option value="${u.id}">${esc(u.nome)}</option>`).join('');
