@@ -682,7 +682,7 @@
         </div>
 
         <!-- Painel Oficiais de Ligação (visível apenas para administrador/dradj_cnsr) -->
-        <div id="ofic-panel" class="ofic-panel auth-gestor" style="display:none;">
+        <div id="ofic-panel" class="ofic-panel" style="display:none;">
           <div class="ofic-panel-hdr">
             <div class="ofic-panel-title">⚡ Oficiais de Ligação</div>
             <div style="display:flex;gap:8px;align-items:center;">
@@ -1294,7 +1294,15 @@ async function apiFetch(path, options = {}){
 }
 
 function showAuthOverlay(){
-  currentUser=null; currentRole=null; currentNome='';
+  currentUser=null; currentRole=null; currentNome=''; currentOccId=null;
+  // Limpar caches de sessão
+  _tecnicos=[]; _fieldUsers=[]; _tlData=[]; _tlFilter='all';
+  // Esconder e limpar painel de Oficiais de Ligação
+  const oficPanel=document.getElementById('ofic-panel');
+  if(oficPanel) oficPanel.style.display='none';
+  const oficList=document.getElementById('ofic-list');
+  if(oficList) oficList.innerHTML='<div style="font-size:11px;color:var(--muted);padding:4px 0;">—</div>';
+  // UI reset
   document.getElementById('auth-overlay').classList.remove('hidden');
   document.getElementById('btn-logout').style.display='none';
   document.getElementById('topbar-user').textContent='';
