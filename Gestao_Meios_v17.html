@@ -414,10 +414,11 @@
     .auth-invite-info{font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:14px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;}
     /* ═══ ROLE BADGE IN TOPBAR ═══ */
     .role-badge{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;padding:3px 8px;border-radius:2px;text-transform:uppercase;}
-    .role-admin{background:rgba(66,154,189,.14);color:var(--icnf-blue-light);border:1px solid rgba(66,154,189,.35);}
-    .role-gestor{background:rgba(140,150,28,.12);color:var(--icnf-green-lime);border:1px solid rgba(140,150,28,.3);}
+    .role-administrador{background:rgba(66,154,189,.14);color:var(--icnf-blue-light);border:1px solid rgba(66,154,189,.35);}
+    .role-dradj_cnsr{background:rgba(140,150,28,.12);color:var(--icnf-green-lime);border:1px solid rgba(140,150,28,.3);}
     .role-operacional{background:rgba(90,184,214,.1);color:var(--accent3);border:1px solid rgba(90,184,214,.25);}
-    .role-visualizador{background:rgba(89,99,0,.15);color:var(--muted);border:1px solid var(--border);}
+    .role-tecnico{background:rgba(89,99,0,.15);color:var(--muted);border:1px solid var(--border);}
+    .role-ofic_lig{background:rgba(200,154,42,.12);color:var(--warn);border:1px solid rgba(200,154,42,.3);}
     /* ═══ USER MANAGEMENT PAGE ═══ */
     .user-role-sel{padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;color:var(--text);font-size:11px;font-family:'Barlow',sans-serif;}
 
@@ -453,6 +454,16 @@
   .fogos-loading { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
   .fogos-count-badge { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); }
   .fogos-refresh-btn { font-size: 11px; }
+  /* ═══ OFICIAIS DE LIGAÇÃO ════════════════════════════════════════ */
+  .ofic-panel{background:var(--surface);border:1px solid var(--border);border-radius:2px;margin-bottom:16px;overflow:hidden;}
+  .ofic-panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--border);}
+  .ofic-panel-title{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--warn);}
+  .ofic-list{padding:8px 16px 10px;}
+  .ofic-item{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(37,39,32,.3);font-size:12px;}
+  .ofic-item:last-child{border-bottom:none;}
+  .ofic-nome{font-weight:500;color:var(--text);}
+  .ofic-email{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-left:8px;}
+
   /* ═══ FITA DO TEMPO ══════════════════════════════════════════════ */
   .tl-panel-wrap{background:var(--surface);border:1px solid var(--border);border-radius:2px;overflow:hidden;}
   .tl-panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--surface2);}
@@ -670,6 +681,20 @@
           </div>
         </div>
 
+        <!-- Painel Oficiais de Ligação (visível apenas para administrador/dradj_cnsr) -->
+        <div id="ofic-panel" class="ofic-panel auth-gestor" style="display:none;">
+          <div class="ofic-panel-hdr">
+            <div class="ofic-panel-title">⚡ Oficiais de Ligação</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <select class="form-select" id="ofic-select" style="font-size:11px;padding:3px 8px;"></select>
+              <button class="btn btn-warn btn-xs" onclick="nomearOficialLigacao()">+ Nomear</button>
+            </div>
+          </div>
+          <div id="ofic-list" class="ofic-list">
+            <div style="font-size:11px;color:var(--muted);padding:4px 0;">—</div>
+          </div>
+        </div>
+
         <div class="section-hdr">
           <div class="section-title">Listagem de meios <span id="team-count-label"></span></div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -805,20 +830,20 @@
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Níveis de acesso</div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">
             <div style="padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;">
-              <span class="role-badge role-admin" style="display:inline-block;margin-bottom:6px;">admin</span>
-              <div style="font-size:11px;color:var(--muted);line-height:1.6;">Acesso total. Gere utilizadores, apaga ocorrências, exporta dados.</div>
+              <span class="role-badge role-administrador" style="display:inline-block;margin-bottom:6px;">administrador</span>
+              <div style="font-size:11px;color:var(--muted);line-height:1.6;">Acesso total. Gere utilizadores, nomeia Oficiais de Ligação, apaga ocorrências.</div>
             </div>
             <div style="padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;">
-              <span class="role-badge role-gestor" style="display:inline-block;margin-bottom:6px;">gestor</span>
-              <div style="font-size:11px;color:var(--muted);line-height:1.6;">Criar/editar ocorrências e meios. Exportar logs. Fechar ocorrências.</div>
+              <span class="role-badge role-dradj_cnsr" style="display:inline-block;margin-bottom:6px;">DRAdj+CNSR</span>
+              <div style="font-size:11px;color:var(--muted);line-height:1.6;">Criar/editar ocorrências e meios da sua sub-região. Nomear Oficiais de Ligação.</div>
             </div>
             <div style="padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;">
               <span class="role-badge role-operacional" style="display:inline-block;margin-bottom:6px;">operacional</span>
-              <div style="font-size:11px;color:var(--muted);line-height:1.6;">Ver ocorrências. Registar eventos e mudar estado dos meios.</div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.6;">Ações rápidas apenas no meio onde está listado como operativo.</div>
             </div>
             <div style="padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;">
-              <span class="role-badge role-visualizador" style="display:inline-block;margin-bottom:6px;">visualizador</span>
-              <div style="font-size:11px;color:var(--muted);line-height:1.6;">Só leitura. Não pode fazer alterações.</div>
+              <span class="role-badge role-tecnico" style="display:inline-block;margin-bottom:6px;">técnico</span>
+              <div style="font-size:11px;color:var(--muted);line-height:1.6;">Leitura da sub-região. Se nomeado Oficial de Ligação, gere as ocorrências atribuídas.</div>
             </div>
           </div>
         </div>
@@ -1142,10 +1167,10 @@
       <div class="form-field">
         <label class="form-label">Role</label>
         <select class="form-select" id="user-role" onchange="toggleInviteSubregiao(this.value)">
-          <option value="visualizador">Visualizador — só leitura</option>
-          <option value="operacional">Operacional — ver + registar eventos</option>
-          <option value="gestor">Gestor — criar/editar ocorrências e meios</option>
-          <option value="admin">Admin — acesso total</option>
+          <option value="tecnico">Técnico — leitura da sub-região</option>
+          <option value="operacional">Operacional — ações rápidas no próprio meio</option>
+          <option value="dradj_cnsr">DRAdj+CNSR — gerir ocorrências e meios</option>
+          <option value="administrador">Administrador — acesso total</option>
         </select>
       </div>
       <div class="form-field" id="invite-subregiao-field" style="display:none;">
@@ -1700,9 +1725,9 @@ async function completeLogin(authData){
 }
 
 function applyRoleUI(){
-  const isAdmin  = currentRole==='admin';
-  const isGestor = ['admin','gestor'].includes(currentRole);
-  const isOp     = ['admin','gestor','operacional'].includes(currentRole);
+  const isAdmin  = currentRole==='administrador';
+  const isGestor = ['administrador','dradj_cnsr'].includes(currentRole);
+  const isOp     = ['administrador','dradj_cnsr','operacional'].includes(currentRole);
   // Admin-only elements
   document.querySelectorAll('.auth-admin').forEach(el=>el.style.display=isAdmin?'':'none');
   // Sub-região filter only visible to admin
@@ -1903,7 +1928,7 @@ function addEventLog(t, msg){
 let currentOccId=null, currentView='sector';
 
 function navTo(page,el){
-  if(page==='utilizadores'&&currentRole!=='admin'){ toast('Acesso restrito a administradores.','err'); return; }
+  if(page==='utilizadores'&&currentRole!=='administrador'){ toast('Acesso restrito a administradores.','err'); return; }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
@@ -1988,7 +2013,7 @@ function renderOcorrencias(){
   let list = db.ocorrencias.filter(o=>o.status==='active');
 
   const grid=document.getElementById('occ-grid');
-  const isAdmin = currentRole==='admin';
+  const isAdmin = currentRole==='administrador';
 
   // Admin: populate sub-região filter and apply
   if(isAdmin){
@@ -2089,18 +2114,18 @@ function arqCardHtml(o){
       </div>
       <div style="display:flex;gap:6px;align-items:center;">
         <button class="btn btn-ghost btn-sm" style="font-size:10px;" onclick="event.stopPropagation();exportArqLog('${o.id}')">⬇ Log</button>
-        ${['admin','gestor'].includes(currentRole)?`<button class="btn btn-warn btn-sm" style="font-size:10px;" onclick="event.stopPropagation();reopenOcorrencia('${o.id}')">↩ Reabrir</button>`:''}
+        ${['administrador','dradj_cnsr'].includes(currentRole)?`<button class="btn btn-warn btn-sm" style="font-size:10px;" onclick="event.stopPropagation();reopenOcorrencia('${o.id}')">↩ Reabrir</button>`:''}
       </div>
     </div>
   </div>`;
 }
 
 function renderArquivo(){
-  const isAdmin = currentRole==='admin';
+  const isAdmin = currentRole==='administrador';
   let list = db.ocorrencias.filter(o=>o.status==='closed');
 
   // Gestor: only their sub-região
-  if(currentRole==='gestor' && currentSubregiao){
+  if(currentRole==='dradj_cnsr' && currentSubregiao){
     list = list.filter(o=>o.subregiao===currentSubregiao);
   }
 
@@ -2187,7 +2212,7 @@ function openNewOcorrencia(){
   populateSubregiaoSelect('occ-subregiao', currentSubregiao || '');
   const sel = document.getElementById('occ-subregiao');
   const lock = document.getElementById('occ-subregiao-lock');
-  if(currentRole === 'gestor' && currentSubregiao){
+  if(currentRole === 'dradj_cnsr' && currentSubregiao){
     // Pre-select and visually lock — do NOT use disabled (disabled fields return empty value)
     sel.value = currentSubregiao;
     sel.style.pointerEvents = 'none';
@@ -2216,7 +2241,7 @@ async function saveOcorrencia(){
   const subregiao = document.getElementById('occ-subregiao').value;
   if(!subregiao){toast('Selecione a sub-região.','err');return;}
   // Gestor can only save in their own sub-região
-  if(currentRole==='gestor' && currentSubregiao && subregiao !== currentSubregiao){
+  if(currentRole==='dradj_cnsr' && currentSubregiao && subregiao !== currentSubregiao){
     toast('Sem permissão para criar ocorrências nesta sub-região.','err'); return;
   }
   const editId=document.getElementById('occ-edit-id').value;
@@ -2229,10 +2254,11 @@ async function saveOcorrencia(){
 }
 
 function openDetalhe(id){
-  // Reset timeline panel when switching occurrence
+  // Reset timeline e Oficiais de Ligação ao mudar de ocorrência
   _tlData = []; _tlFilter = 'all';
   document.getElementById('tl-panel').style.display = 'none';
   document.getElementById('btnTimeline').textContent = '⏱ Fita do Tempo';
+  _tecnicos = [];
   currentOccId=id;
   const o=db.ocorrencias.find(x=>x.id===id);
   if(!o) return;
@@ -2256,6 +2282,7 @@ function openDetalhe(id){
   document.getElementById('topbar-sub').textContent=(isClosed?'🗄 ARQUIVADA · ':'')+(o.ref?`Cód. ${o.ref} · `:'')+(o.concelho||'');
   updateSetorDatalist();
   renderTeams();
+  loadOficiaisLigacao();
   navTo('detalhe',null);
   document.querySelector('[data-page="ocorrencias"]').classList.add('active');
 }
@@ -2496,8 +2523,8 @@ function renderTableView(teams, isClosed){
       <td><span class="badge ${est.cls}">${est.l}</span></td>
       <td style="font-size:10px;color:var(--muted);max-width:100px">${esc((t.obs||'').slice(0,60))}</td>
       <td><div style="display:flex;gap:4px;">
-        ${!isClosed&&['admin','gestor'].includes(currentRole)?`<button class="btn btn-ghost btn-xs" onclick="editTeam('${t.id}')">✎</button>`:''}
-        ${!isClosed&&['admin','gestor'].includes(currentRole)?`<button class="btn btn-danger btn-xs" onclick="deleteTeam('${t.id}')">✕</button>`:''}
+        ${!isClosed&&['administrador','dradj_cnsr'].includes(currentRole)?`<button class="btn btn-ghost btn-xs" onclick="editTeam('${t.id}')">✎</button>`:''}
+        ${!isClosed&&['administrador','dradj_cnsr'].includes(currentRole)?`<button class="btn btn-danger btn-xs" onclick="deleteTeam('${t.id}')">✕</button>`:''}
       </div></td>
     </tr>`;
   }).join('');
@@ -2540,14 +2567,14 @@ function teamCardHtml(t, isClosed){
 
   // Action buttons — hidden for closed ocorrências
   const actionsHtml = isClosed ? '' : `<div class="team-card-actions">
-      ${['admin','gestor','operacional'].includes(currentRole)&&t.estado==='previsto'?`<button class="btn btn-info btn-xs" onclick="quickAction('transit','${t.id}')" style="border-color:rgba(152,112,208,.4);color:#b890e8">▶ Activar Trânsito</button>`:''}
-      ${['admin','gestor','operacional'].includes(currentRole)&&t.estado!=='operacao'&&t.estado!=='previsto'?`<button class="btn btn-success btn-xs" onclick="quickAction('op','${t.id}')">▶ Activar Op.</button>`:''}
-      ${['admin','gestor','operacional'].includes(currentRole)&&t.estado==='operacao'?`<button class="btn btn-warn btn-xs" onclick="quickAction('rest','${t.id}')">⏸ Descanso</button>`:''}
-      ${['admin','gestor','operacional'].includes(currentRole)&&t.estado!=='desmobilizado'?`<button class="btn btn-danger btn-xs" onclick="quickAction('demob','${t.id}')">✕ Desmob.</button>`:''}
-      ${['admin','gestor','operacional'].includes(currentRole)&&t.estado!=='previsto'?`<button class="btn btn-info btn-xs" onclick="quickAction('sector','${t.id}')">⊞ Setor</button>`:''}
-      ${['admin','gestor','operacional'].includes(currentRole)?`<button class="btn btn-ghost btn-xs" onclick="quickAction('obs','${t.id}')">📝 Obs.</button>`:''}
-      ${['admin','gestor'].includes(currentRole)?`<button class="btn btn-ghost btn-xs" onclick="editTeam('${t.id}')">✎ Editar</button>`:''}
-      ${['admin','gestor'].includes(currentRole)?`<button class="btn btn-danger btn-xs" onclick="deleteTeam('${t.id}')">🗑</button>`:''}
+      ${['administrador','dradj_cnsr','operacional'].includes(currentRole)&&t.estado==='previsto'?`<button class="btn btn-info btn-xs" onclick="quickAction('transit','${t.id}')" style="border-color:rgba(152,112,208,.4);color:#b890e8">▶ Activar Trânsito</button>`:''}
+      ${['administrador','dradj_cnsr','operacional'].includes(currentRole)&&t.estado!=='operacao'&&t.estado!=='previsto'?`<button class="btn btn-success btn-xs" onclick="quickAction('op','${t.id}')">▶ Activar Op.</button>`:''}
+      ${['administrador','dradj_cnsr','operacional'].includes(currentRole)&&t.estado==='operacao'?`<button class="btn btn-warn btn-xs" onclick="quickAction('rest','${t.id}')">⏸ Descanso</button>`:''}
+      ${['administrador','dradj_cnsr','operacional'].includes(currentRole)&&t.estado!=='desmobilizado'?`<button class="btn btn-danger btn-xs" onclick="quickAction('demob','${t.id}')">✕ Desmob.</button>`:''}
+      ${['administrador','dradj_cnsr','operacional'].includes(currentRole)&&t.estado!=='previsto'?`<button class="btn btn-info btn-xs" onclick="quickAction('sector','${t.id}')">⊞ Setor</button>`:''}
+      ${['administrador','dradj_cnsr','operacional'].includes(currentRole)?`<button class="btn btn-ghost btn-xs" onclick="quickAction('obs','${t.id}')">📝 Obs.</button>`:''}
+      ${['administrador','dradj_cnsr'].includes(currentRole)?`<button class="btn btn-ghost btn-xs" onclick="editTeam('${t.id}')">✎ Editar</button>`:''}
+      ${['administrador','dradj_cnsr'].includes(currentRole)?`<button class="btn btn-danger btn-xs" onclick="deleteTeam('${t.id}')">🗑</button>`:''}
     </div>`;
 
   return `<div class="team-card estado-${t.estado}${urgent?' urgent':''}${isClosed?' closed-occ':''}">
@@ -2914,7 +2941,7 @@ function editTeam(id){
 }
 
 async function saveTeam(){
-  if(!['admin','gestor'].includes(currentRole)){toast('Sem permissão para editar meios.','err');return;}
+  if(!['administrador','dradj_cnsr'].includes(currentRole)){toast('Sem permissão para editar meios.','err');return;}
   const eq=document.getElementById('team-eq').value.trim();
   if(!eq){toast('Insira a designação do meio.','err');return;}
   const editId=document.getElementById('team-edit-id').value;
@@ -3044,8 +3071,8 @@ function renderEquipas(){
     <td style="font-size:11px">${esc(e.subregiao||'—')}</td>
     <td style="font-size:11px">${esc(e.concelho||'—')}</td>
     <td><div style="display:flex;gap:4px;">
-      ${['admin','gestor'].includes(currentRole)?`<button class="btn btn-ghost btn-sm" onclick="editEquipa('${e.id}')">✎</button>`:''}
-      ${['admin','gestor'].includes(currentRole)?`<button class="btn btn-danger btn-sm" onclick="deleteEquipa('${e.id}')">✕</button>`:''}
+      ${['administrador','dradj_cnsr'].includes(currentRole)?`<button class="btn btn-ghost btn-sm" onclick="editEquipa('${e.id}')">✎</button>`:''}
+      ${['administrador','dradj_cnsr'].includes(currentRole)?`<button class="btn btn-danger btn-sm" onclick="deleteEquipa('${e.id}')">✕</button>`:''}
     </div></td>
   </tr>`).join('');
 }
@@ -3173,8 +3200,8 @@ function renderOperacionais(){
     <td class="mono">${esc(op.contacto||'—')}</td>
     <td style="font-size:11px;color:var(--muted)">${esc(op.notas||'')}</td>
     <td><div style="display:flex;gap:4px;">
-      ${['admin','gestor'].includes(currentRole)?`<button class="btn btn-ghost btn-sm" onclick="editOperacional('${op.id}')">✎</button>`:''}
-      ${['admin','gestor'].includes(currentRole)?`<button class="btn btn-danger btn-sm" onclick="deleteOperacional('${op.id}')">✕</button>`:''}
+      ${['administrador','dradj_cnsr'].includes(currentRole)?`<button class="btn btn-ghost btn-sm" onclick="editOperacional('${op.id}')">✎</button>`:''}
+      ${['administrador','dradj_cnsr'].includes(currentRole)?`<button class="btn btn-danger btn-sm" onclick="deleteOperacional('${op.id}')">✕</button>`:''}
     </div></td>
   </tr>`).join('');
 }
@@ -3510,7 +3537,7 @@ async function renderUsers(){
   const { data: users, error } = await apiFetch('/api/utilizadores');
   if(error){ tbody.innerHTML='<tr><td colspan="6"><div class="empty">Erro ao carregar utilizadores.</div></td></tr>'; return; }
 
-  const roleCls={admin:'role-admin',gestor:'role-gestor',operacional:'role-operacional',visualizador:'role-visualizador'};
+  const roleCls={administrador:'role-administrador',dradj_cnsr:'role-dradj_cnsr',operacional:'role-operacional',tecnico:'role-tecnico'};
 
   const html = (users||[]).map(u=>`<tr>
     <td><strong>${esc(u.nome)}</strong></td>
@@ -3520,7 +3547,7 @@ async function renderUsers(){
     <td>${u.ativo?'<span class="badge badge-ok">Ativo</span>':'<span class="badge badge-closed">Inativo</span>'}</td>
     <td><div style="display:flex;gap:6px;flex-wrap:wrap;">
       <select class="user-role-sel" onchange="changeUserRole('${u.id}',this.value)">
-        ${['admin','gestor','operacional','visualizador'].map(r=>`<option value="${r}"${r===u.role?' selected':''}>${r}</option>`).join('')}
+        ${['administrador','dradj_cnsr','operacional','tecnico'].map(r=>`<option value="${r}"${r===u.role?' selected':''}>${r}</option>`).join('')}
       </select>
       <select class="user-role-sel" style="max-width:130px;" onchange="changeUserSubregiao('${u.id}',this.value)" title="Sub-região">
         <option value="">— Sub-região —</option>
@@ -3538,14 +3565,14 @@ function openNewUser(){
   document.getElementById('new-user-nome').value='';
   document.getElementById('new-user-email').value='';
   document.getElementById('new-user-pass').value='';
-  document.getElementById('user-role').value='visualizador';
+  document.getElementById('user-role').value='tecnico';
   populateSubregiaoSelect('invite-subregiao', '');
   document.getElementById('invite-subregiao-field').style.display='none';
   openModal('modal-user');
 }
 
 function toggleInviteSubregiao(role){
-  document.getElementById('invite-subregiao-field').style.display = role==='gestor' ? '' : 'none';
+  document.getElementById('invite-subregiao-field').style.display = role==='dradj_cnsr' ? '' : 'none';
 }
 
 async function createUser(){
@@ -3556,7 +3583,7 @@ async function createUser(){
   const subregiao= document.getElementById('invite-subregiao').value || null;
   if(!nome||!email||!pass){ toast('Preencha nome, email e password.','err'); return; }
   if(pass.length<8){ toast('Password mínimo 8 caracteres.','err'); return; }
-  if(role==='gestor'&&!subregiao){ toast('Selecione a sub-região para o gestor.','err'); return; }
+  if(role==='dradj_cnsr'&&!subregiao){ toast('Selecione a sub-região para o DRAdj+CNSR.','err'); return; }
   const { data, error } = await apiFetch('/api/utilizadores',{method:'POST',body:JSON.stringify({nome,email,password:pass,role,subregiao})});
   if(error){ toast('Erro: '+error.message,'err'); return; }
   closeModal('modal-user'); toast('Utilizador criado!','ok'); renderUsers();
@@ -3830,7 +3857,7 @@ function createOcorrenciaFromFogos(inc) {
   populateSubregiaoSelect('occ-subregiao', currentSubregiao || subregiao);
   const sel  = document.getElementById('occ-subregiao');
   const lock = document.getElementById('occ-subregiao-lock');
-  if(currentRole === 'gestor' && currentSubregiao) {
+  if(currentRole === 'dradj_cnsr' && currentSubregiao) {
     sel.value = currentSubregiao;
     sel.style.pointerEvents = 'none'; sel.style.opacity = '0.75'; sel.style.cursor = 'not-allowed';
     if(lock) lock.style.display = '';
@@ -3844,6 +3871,61 @@ function createOcorrenciaFromFogos(inc) {
 
 function titleCase(str) {
   return str.replace(/\w\S*/g, t => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase());
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  OFICIAIS DE LIGAÇÃO
+// ══════════════════════════════════════════════════════════════════
+let _tecnicos = []; // cache de técnicos para o selector
+
+async function loadOficiaisLigacao(){
+  const isGestor = ['administrador','dradj_cnsr'].includes(currentRole);
+  const panel = document.getElementById('ofic-panel');
+  if(!panel) return;
+  panel.style.display = isGestor ? '' : 'none';
+  if(!isGestor || !currentOccId) return;
+
+  // Carregar técnicos disponíveis para o selector (só se ainda não carregados)
+  if(!_tecnicos.length){
+    const { data } = await apiFetch('/api/utilizadores');
+    _tecnicos = (data||[]).filter(u => u.role === 'tecnico');
+    const sel = document.getElementById('ofic-select');
+    sel.innerHTML = '<option value="">— Selecionar Técnico —</option>' +
+      _tecnicos.map(u => `<option value="${u.id}">${esc(u.nome)}</option>`).join('');
+  }
+
+  // Carregar nomeações actuais
+  const { data, error } = await apiFetch(`/api/ocorrencias/${currentOccId}/oficiais_ligacao`);
+  if(error) return;
+  const list = document.getElementById('ofic-list');
+  if(!data?.length){
+    list.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:4px 0;">Nenhum Oficial de Ligação nomeado.</div>';
+    return;
+  }
+  list.innerHTML = data.map(u => `<div class="ofic-item">
+    <div><span class="ofic-nome">${esc(u.nome)}</span><span class="ofic-email">${esc(u.email)}</span></div>
+    <button class="btn btn-danger btn-xs" onclick="removerOficialLigacao('${u.utilizador_id}')">✕</button>
+  </div>`).join('');
+}
+
+async function nomearOficialLigacao(){
+  const uid = document.getElementById('ofic-select').value;
+  if(!uid){ toast('Selecione um Técnico.','err'); return; }
+  const { error } = await apiFetch(`/api/ocorrencias/${currentOccId}/oficiais_ligacao`, {
+    method:'POST', body: JSON.stringify({ utilizador_id: uid })
+  });
+  if(error){ toast('Erro: '+error,'err'); return; }
+  document.getElementById('ofic-select').value = '';
+  toast('Oficial de Ligação nomeado.','ok');
+  await loadOficiaisLigacao();
+}
+
+async function removerOficialLigacao(uid){
+  if(!confirm('Remover Oficial de Ligação?')) return;
+  const { error } = await apiFetch(`/api/ocorrencias/${currentOccId}/oficiais_ligacao/${uid}`, { method:'DELETE' });
+  if(error){ toast('Erro: '+error,'err'); return; }
+  toast('Nomeação removida.','ok');
+  await loadOficiaisLigacao();
 }
 
 // ── Service Worker (PWA) ─────────────────────────────────────────
