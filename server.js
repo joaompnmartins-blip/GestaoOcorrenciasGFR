@@ -411,15 +411,15 @@ async function runMigrations() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS ocorrencia_timeline (
       id            SERIAL PRIMARY KEY,
-      ocorrencia_id INTEGER NOT NULL REFERENCES ocorrencias(id) ON DELETE CASCADE,
+      ocorrencia_id UUID NOT NULL REFERENCES ocorrencias(id) ON DELETE CASCADE,
       ts            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       categoria     TEXT NOT NULL,
       titulo        TEXT,
       descricao     TEXT,
       dados         JSONB,
       autor_nome    TEXT,
-      autor_id      INTEGER REFERENCES utilizadores(id),
-      meio_id       INTEGER REFERENCES meios(id)
+      autor_id      UUID REFERENCES utilizadores(id),
+      meio_id       UUID REFERENCES meios(id)
     )
   `);
 
