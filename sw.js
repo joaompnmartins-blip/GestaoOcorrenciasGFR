@@ -1,16 +1,13 @@
 'use strict';
 
-const CACHE = 'gestao-occ-v1';
+const CACHE = 'gestao-occ-v2';
 
-// App shell — ficheiros servidos pelo próprio servidor
 const PRECACHE = [
-  '/',
-  '/Gestao_Meios_v17.html',
   '/manifest.json',
   '/icons/icon.svg',
 ];
 
-// ── Install: pré-carrega app shell ───────────────────────────────
+// ── Install ──────────────────────────────────────────────────────
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
@@ -34,21 +31,34 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Chamadas à API: sempre rede (o IndexedDB já trata o offline)
+  // API: sempre rede
   if (url.pathname.startsWith('/api/')) return;
 
-  // Recursos da mesma origem: cache-first, actualiza em background
+  // HTML principal: network-first (actualizações imediatas; cache só quando offline)
+  if (url.origin === self.location.origin &&
+      (url.pathname === '/' || url.pathname.endsWith('.html'))) {
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+          return res;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Outros recursos estáticos (ícones, manifest): cache-first
   if (url.origin === self.location.origin) {
     e.respondWith(
-      caches.open(CACHE).then(cache =>
-        cache.match(e.request).then(cached => {
-          const network = fetch(e.request).then(res => {
-            cache.put(e.request, res.clone());
-            return res;
-          }).catch(() => cached);
-          return cached || network;
-        })
-      )
+      caches.match(e.request).then(cached => {
+        const network = fetch(e.request).then(res => {
+          caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+          return res;
+        }).catch(() => cached);
+        return cached || network;
+      })
     );
     return;
   }
