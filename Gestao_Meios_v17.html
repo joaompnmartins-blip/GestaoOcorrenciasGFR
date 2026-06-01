@@ -2569,9 +2569,9 @@ function teamCardHtml(t, isClosed){
   const actionsHtml = isClosed ? '' : `<div class="team-card-actions">
       ${['administrador','dradj_cnsr','operacional'].includes(currentRole)&&t.estado==='previsto'?`<button class="btn btn-info btn-xs" onclick="quickAction('transit','${t.id}')" style="border-color:rgba(152,112,208,.4);color:#b890e8">▶ Activar Trânsito</button>`:''}
       ${['administrador','dradj_cnsr','operacional'].includes(currentRole)&&t.estado!=='operacao'&&t.estado!=='previsto'?`<button class="btn btn-success btn-xs" onclick="quickAction('op','${t.id}')">▶ Activar Op.</button>`:''}
-      ${['administrador','dradj_cnsr','operacional'].includes(currentRole)&&t.estado==='operacao'?`<button class="btn btn-warn btn-xs" onclick="quickAction('rest','${t.id}')">⏸ Descanso</button>`:''}
-      ${['administrador','dradj_cnsr','operacional'].includes(currentRole)&&t.estado!=='desmobilizado'?`<button class="btn btn-danger btn-xs" onclick="quickAction('demob','${t.id}')">✕ Desmob.</button>`:''}
-      ${['administrador','dradj_cnsr','operacional'].includes(currentRole)&&t.estado!=='previsto'?`<button class="btn btn-info btn-xs" onclick="quickAction('sector','${t.id}')">⊞ Setor</button>`:''}
+      ${['administrador','dradj_cnsr'].includes(currentRole)&&t.estado==='operacao'?`<button class="btn btn-warn btn-xs" onclick="quickAction('rest','${t.id}')">⏸ Descanso</button>`:''}
+      ${['administrador','dradj_cnsr'].includes(currentRole)&&t.estado!=='desmobilizado'?`<button class="btn btn-danger btn-xs" onclick="quickAction('demob','${t.id}')">✕ Desmob.</button>`:''}
+      ${['administrador','dradj_cnsr'].includes(currentRole)&&t.estado!=='previsto'?`<button class="btn btn-info btn-xs" onclick="quickAction('sector','${t.id}')">⊞ Setor</button>`:''}
       ${['administrador','dradj_cnsr','operacional'].includes(currentRole)?`<button class="btn btn-ghost btn-xs" onclick="quickAction('obs','${t.id}')">📝 Obs.</button>`:''}
       ${['administrador','dradj_cnsr'].includes(currentRole)?`<button class="btn btn-ghost btn-xs" onclick="editTeam('${t.id}')">✎ Editar</button>`:''}
       ${['administrador','dradj_cnsr'].includes(currentRole)?`<button class="btn btn-danger btn-xs" onclick="deleteTeam('${t.id}')">🗑</button>`:''}
