@@ -220,7 +220,7 @@ app.post('/api/meios', requireAuth('tecnico'), requireAuthForOccurrence, wrap(as
   res.json(rows[0]);
 }));
 
-app.patch('/api/meios/:id', requireAuth('operacional'), requireAuthForMeio, wrap(async (req, res) => {
+app.patch('/api/meios/:id', requireAuth('tecnico'), requireAuthForMeio, wrap(async (req, res) => {
   const b = req.body;
   // Only update columns present in the body — partial rows from quick actions
   // must not null out NOT NULL columns like ocorrencia_id or eq.
