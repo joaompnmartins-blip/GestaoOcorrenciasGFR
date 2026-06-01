@@ -13,21 +13,23 @@ O novo modelo é **híbrido**: o perfil base define o mínimo, mas as permissõe
 
 ## Perfis e permissões
 
-| Perfil | Base | Permissões |
-|---|---|---|
-| `administrador` | igual ao atual `admin` | acesso total |
-| `dradj_cnsr` | igual ao atual `gestor` | gestão da sub-região atribuída |
-| `tecnico` | leitura de tudo | sem escrita por defeito |
-| `tecnico` (Oficial de Ligação) | elevado por nomeação | permissões de `dradj_cnsr` para ocorrências específicas |
-| `operacional` | field operative | ações rápidas apenas no próprio meio |
+| Perfil | Situação | Leitura | Escrita |
+|---|---|---|---|
+| `administrador` | — | tudo | tudo |
+| `dradj_cnsr` | — | ocorrências da sua sub-região | gestão completa da sub-região |
+| `tecnico` | base (sem nomeação, sem meio) | ocorrências da **sua sub-região** | nenhuma |
+| `tecnico` | incluído num meio | idem | ações rápidas **nesse meio** (= operacional) |
+| `tecnico` | Oficial de Ligação numa ocorrência | sub-região + ocorrências nomeadas | gestão completa **dessas ocorrências** (= dradj_cnsr) |
+| `operacional` | — | ocorrências da sua sub-região | ações rápidas **no próprio meio** |
 
 ### Regras detalhadas
 
 - **Administrador**: cria utilizadores, nomeia Oficiais de Ligação, acede a tudo
 - **DRAdj+CNSR**: gere ocorrências da sua sub-região, pode nomear Oficiais de Ligação
-- **Técnico (base)**: leitura de todas as ocorrências de todas as sub-regiões; sem escrita
-- **Técnico (Oficial de Ligação)**: nomeado por Admin ou DRAdj+CNSR para uma ocorrência específica; passa a ter permissões de DRAdj+CNSR **apenas nessa ocorrência**
-- **Operacional**: só pode fazer ações rápidas no meio onde está listado como operativo; acede via app mobile
+- **Técnico (base)**: leitura das ocorrências da **sua sub-região**; sem escrita
+- **Técnico (em meio)**: se incluído em `meios_operativos` de um meio, pode fazer ações rápidas nesse meio — equivalente a `operacional`
+- **Técnico (Oficial de Ligação)**: nomeado por Admin ou DRAdj+CNSR para uma ocorrência específica; passa a ter permissões de DRAdj+CNSR **apenas nessa ocorrência**; mantém leitura da sua sub-região para as restantes
+- **Operacional**: leitura das ocorrências da sua sub-região; ações rápidas apenas no meio onde está listado; acede via app mobile
 
 ---
 
@@ -113,8 +115,8 @@ async function requireAuthForMeio(req, res, next) {
     );
     if (rows.length) return next();
   }
-  // Operacional listado neste meio
-  if (role === 'operacional') {
+  // Operacional OU Técnico listado neste meio
+  if (role === 'operacional' || role === 'tecnico') {
     const { rows } = await pool.query(
       'SELECT 1 FROM meios_operativos WHERE meio_id=$1 AND utilizador_id=$2',
       [meioId, userId]
@@ -129,7 +131,7 @@ async function requireAuthForMeio(req, res, next) {
 
 | Método | Rota | Permissão |
 |---|---|---|
-| GET | `/api/ocorrencias` | qualquer autenticado (`tecnico` vê todas as sub-regiões) |
+| GET | `/api/ocorrencias` | qualquer autenticado; `tecnico` e `operacional` filtrados pela sua `subregiao`; Oficial de Ligação vê também as ocorrências nomeadas |
 | POST | `/api/ocorrencias` | `dradj_cnsr` ou `tecnico` nomeado |
 | PATCH | `/api/ocorrencias/:id` | `requireAuthForOccurrence` |
 | DELETE | `/api/ocorrencias/:id` | `administrador` |
