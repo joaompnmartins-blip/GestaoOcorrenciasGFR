@@ -229,15 +229,15 @@ app.get('/api/ocorrencias/:id/timeline', requireAuth('visualizador'), wrap(async
 
       UNION ALL
 
-      SELECT oe.ts,
-             CASE oe.tag WHEN 'estado' THEN 'estado_ocorrencia' ELSE 'geral' END,
-             oe.msg, NULL, NULL::JSONB, NULL, oe.meio_label
+      SELECT oe.ts, 'ocorrencia', oe.msg, NULL, NULL::JSONB, NULL, NULL
       FROM ocorrencias_eventos oe
       WHERE oe.ocorrencia_id = $1
 
       UNION ALL
 
-      SELECT me.ts, 'meios_proprios', me.msg, NULL, NULL::JSONB, NULL, m.eq
+      SELECT me.ts, 'meios_icnf', me.msg, NULL,
+             jsonb_build_object('missao', m.missao, 'estado', m.estado),
+             NULL, m.eq
       FROM meios_eventos me
       JOIN meios m ON m.id = me.meio_id
       WHERE m.ocorrencia_id = $1
