@@ -1,3 +1,4 @@
+require('dotenv').config();
 'use strict';
 const express  = require('express');
 const { Pool } = require('pg');
@@ -215,6 +216,51 @@ app.post('/api/ocorrencias_eventos', requireAuth('operacional'), wrap(async (req
 }));
 
 // ══════════════════════════════════════════════════════════════════
+//  TIMELINE
+// ══════════════════════════════════════════════════════════════════
+app.get('/api/ocorrencias/:id/timeline', requireAuth('visualizador'), wrap(async (req, res) => {
+  const { rows } = await pool.query(`
+    SELECT ts, categoria, titulo, descricao, dados, autor_nome, meio_eq FROM (
+      SELECT ot.ts, ot.categoria, ot.titulo, ot.descricao, ot.dados, ot.autor_nome,
+             m.eq AS meio_eq
+      FROM ocorrencia_timeline ot
+      LEFT JOIN meios m ON m.id = ot.meio_id
+      WHERE ot.ocorrencia_id = $1
+
+      UNION ALL
+
+      SELECT oe.ts,
+             CASE oe.tag WHEN 'estado' THEN 'estado_ocorrencia' ELSE 'geral' END,
+             oe.msg, NULL, NULL::JSONB, NULL, oe.meio_label
+      FROM ocorrencias_eventos oe
+      WHERE oe.ocorrencia_id = $1
+
+      UNION ALL
+
+      SELECT me.ts, 'meios_proprios', me.msg, NULL, NULL::JSONB, NULL, m.eq
+      FROM meios_eventos me
+      JOIN meios m ON m.id = me.meio_id
+      WHERE m.ocorrencia_id = $1
+    ) sub
+    ORDER BY ts DESC
+  `, [req.params.id]);
+  res.json(rows);
+}));
+
+app.post('/api/ocorrencias/:id/timeline', requireAuth('operacional'), wrap(async (req, res) => {
+  const b = req.body;
+  const { rows } = await pool.query(
+    `INSERT INTO ocorrencia_timeline
+       (ocorrencia_id, ts, categoria, titulo, descricao, dados, autor_nome, autor_id, meio_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+    [req.params.id, b.ts || new Date().toISOString(), b.categoria, b.titulo || null,
+     b.descricao || null, b.dados ? JSON.stringify(b.dados) : null,
+     req.user.nome, req.user.id, b.meio_id || null]
+  );
+  res.json(rows[0]);
+}));
+
+// ══════════════════════════════════════════════════════════════════
 //  EQUIPAS
 // ══════════════════════════════════════════════════════════════════
 app.get('/api/equipas', requireAuth('visualizador'), wrap(async (req, res) => {
@@ -359,6 +405,22 @@ async function runMigrations() {
   await pool.query(`
     ALTER TABLE meios ADD CONSTRAINT meios_estado_check
       CHECK (estado IN ('transito','operacao','descanso','desmobilizado','previsto'))
+  `);
+
+  // Timeline table
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ocorrencia_timeline (
+      id            SERIAL PRIMARY KEY,
+      ocorrencia_id INTEGER NOT NULL REFERENCES ocorrencias(id) ON DELETE CASCADE,
+      ts            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      categoria     TEXT NOT NULL,
+      titulo        TEXT,
+      descricao     TEXT,
+      dados         JSONB,
+      autor_nome    TEXT,
+      autor_id      INTEGER REFERENCES utilizadores(id),
+      meio_id       INTEGER REFERENCES meios(id)
+    )
   `);
 
   // Seed ICNF/ANEPC 2026 data if table is empty
