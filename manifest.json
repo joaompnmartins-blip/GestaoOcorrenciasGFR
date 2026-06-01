@@ -1,0 +1,20 @@
+{
+  "name": "Gestão Ocorrências — ICNF GFR",
+  "short_name": "GestãoOcc",
+  "description": "Gestão de ocorrências e meios — ICNF GFR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#080d0b",
+  "theme_color": "#8C961C",
+  "orientation": "any",
+  "lang": "pt-PT",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

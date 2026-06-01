@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#080d0b"/>
+  <!-- ICNF 4-square pattern -->
+  <rect x="96"  y="96"  width="148" height="148" fill="#8C961C"/>
+  <rect x="268" y="96"  width="148" height="148" fill="#429ABD"/>
+  <rect x="96"  y="268" width="148" height="148" fill="#596300"/>
+  <rect x="268" y="268" width="148" height="148" fill="#21658A"/>
+</svg>
