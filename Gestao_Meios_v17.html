@@ -1721,13 +1721,20 @@ async function completeLogin(authData){
   document.getElementById('btn-logout').style.display = '';
   applyRoleUI();
   await loadAllData();
-  renderOcorrencias();
+  if(currentRole === 'operacional'){
+    const myOcc = db.ocorrencias.find(o => o.status === 'active');
+    if(myOcc) openDetalhe(myOcc.id);
+    else renderOcorrencias();
+  } else {
+    renderOcorrencias();
+  }
 }
 
 function applyRoleUI(){
-  const isAdmin  = currentRole==='administrador';
-  const isGestor = ['administrador','dradj_cnsr'].includes(currentRole);
-  const isOp     = ['administrador','dradj_cnsr','operacional'].includes(currentRole);
+  const isAdmin      = currentRole==='administrador';
+  const isGestor     = ['administrador','dradj_cnsr'].includes(currentRole);
+  const isOp         = ['administrador','dradj_cnsr','operacional'].includes(currentRole);
+  const isOperacional = currentRole==='operacional';
   // Admin-only elements
   document.querySelectorAll('.auth-admin').forEach(el=>el.style.display=isAdmin?'':'none');
   // Sub-região filter only visible to admin
@@ -1740,6 +1747,23 @@ function applyRoleUI(){
   // Nova Ocorrência button
   const btnNew = document.getElementById('btnNew');
   if(btnNew) btnNew.style.display = isGestor?'':'none';
+
+  // Operacional: sidebar mínima (só Manual) + sem Fita do Tempo
+  const navOcc    = document.querySelector('.nav-item[data-page="ocorrencias"]');
+  const navEquip  = document.querySelector('.nav-item[data-page="equipas"]');
+  const navArquiv = document.querySelector('.nav-item[data-page="arquivo"]');
+  const btnTL     = document.getElementById('btnTimeline');
+  if(isOperacional){
+    if(navOcc)    navOcc.style.display    = 'none';
+    if(navEquip)  navEquip.style.display  = 'none';
+    if(navArquiv) navArquiv.style.display = 'none';
+    if(btnTL)     btnTL.style.display     = 'none';
+  } else {
+    if(navOcc)    navOcc.style.display    = '';
+    if(navEquip)  navEquip.style.display  = '';
+    if(navArquiv) navArquiv.style.display = '';
+    if(btnTL)     btnTL.style.display     = '';
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -2565,14 +2589,16 @@ function teamCardHtml(t, isClosed){
     lastEvt=`<div class="event-log"><div class="event-item"><span class="event-time">${e.ts.slice(11,16)}</span><span class="event-text">${esc(e.msg)}</span></div></div>`;
   }
 
+  // Operacional só pode agir no meio onde está listado
+  const _inThisMeio = currentRole!=='operacional' || (t.operativos||[]).some(o=>o.utilizador_id===currentUser?.id);
   // Action buttons — hidden for closed ocorrências
   const actionsHtml = isClosed ? '' : `<div class="team-card-actions">
-      ${['administrador','dradj_cnsr','operacional'].includes(currentRole)&&t.estado==='previsto'?`<button class="btn btn-info btn-xs" onclick="quickAction('transit','${t.id}')" style="border-color:rgba(152,112,208,.4);color:#b890e8">▶ Activar Trânsito</button>`:''}
-      ${['administrador','dradj_cnsr','operacional'].includes(currentRole)&&t.estado!=='operacao'&&t.estado!=='previsto'?`<button class="btn btn-success btn-xs" onclick="quickAction('op','${t.id}')">▶ Activar Op.</button>`:''}
+      ${_inThisMeio&&['administrador','dradj_cnsr','operacional'].includes(currentRole)&&t.estado==='previsto'?`<button class="btn btn-info btn-xs" onclick="quickAction('transit','${t.id}')" style="border-color:rgba(152,112,208,.4);color:#b890e8">▶ Activar Trânsito</button>`:''}
+      ${_inThisMeio&&['administrador','dradj_cnsr','operacional'].includes(currentRole)&&t.estado!=='operacao'&&t.estado!=='previsto'?`<button class="btn btn-success btn-xs" onclick="quickAction('op','${t.id}')">▶ Activar Op.</button>`:''}
       ${['administrador','dradj_cnsr'].includes(currentRole)&&t.estado==='operacao'?`<button class="btn btn-warn btn-xs" onclick="quickAction('rest','${t.id}')">⏸ Descanso</button>`:''}
       ${['administrador','dradj_cnsr'].includes(currentRole)&&t.estado!=='desmobilizado'?`<button class="btn btn-danger btn-xs" onclick="quickAction('demob','${t.id}')">✕ Desmob.</button>`:''}
       ${['administrador','dradj_cnsr'].includes(currentRole)&&t.estado!=='previsto'?`<button class="btn btn-info btn-xs" onclick="quickAction('sector','${t.id}')">⊞ Setor</button>`:''}
-      ${['administrador','dradj_cnsr','operacional'].includes(currentRole)?`<button class="btn btn-ghost btn-xs" onclick="quickAction('obs','${t.id}')">📝 Obs.</button>`:''}
+      ${_inThisMeio&&['administrador','dradj_cnsr','operacional'].includes(currentRole)?`<button class="btn btn-ghost btn-xs" onclick="quickAction('obs','${t.id}')">📝 Obs.</button>`:''}
       ${['administrador','dradj_cnsr'].includes(currentRole)?`<button class="btn btn-ghost btn-xs" onclick="editTeam('${t.id}')">✎ Editar</button>`:''}
       ${['administrador','dradj_cnsr'].includes(currentRole)?`<button class="btn btn-danger btn-xs" onclick="deleteTeam('${t.id}')">🗑</button>`:''}
     </div>`;
