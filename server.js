@@ -115,12 +115,13 @@ app.post('/api/login', wrap(async (req, res) => {
   if (!user.ativo)
     return res.status(401).json({ error: 'Conta inativa. Contacte o administrador.' });
 
+  const role = normalizeRole(user.role);
   const token = jwt.sign(
-    { id: user.id, role: user.role, nome: user.nome, subregiao: user.subregiao },
+    { id: user.id, role, nome: user.nome, subregiao: user.subregiao },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES }
   );
-  res.json({ token, id: user.id, role: user.role, nome: user.nome, subregiao: user.subregiao });
+  res.json({ token, id: user.id, role, nome: user.nome, subregiao: user.subregiao });
 }));
 
 // ══════════════════════════════════════════════════════════════════
