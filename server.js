@@ -1,0 +1,384 @@
+'use strict';
+const express  = require('express');
+const { Pool } = require('pg');
+const bcrypt   = require('bcrypt');
+const jwt      = require('jsonwebtoken');
+const path     = require('path');
+
+const app  = express();
+const pool = new Pool({
+  connectionString: process.env.TEST_DATABASE_URL || process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
+
+const JWT_SECRET  = process.env.JWT_SECRET || 'dev-secret-CHANGE-IN-PRODUCTION';
+const JWT_EXPIRES = '12h';
+const PORT        = process.env.PORT || 3000;
+
+app.use(express.json({ limit: '2mb' }));
+app.use(express.static(__dirname));
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'Gestao_Meios_v17.html')));
+
+// ─── Role ordering ────────────────────────────────────────────────
+const ROLE_ORDER = ['visualizador', 'operacional', 'gestor', 'admin'];
+
+function requireAuth(minRole = 'visualizador') {
+  return (req, res, next) => {
+    const header = req.headers.authorization;
+    if (!header?.startsWith('Bearer '))
+      return res.status(401).json({ error: 'Não autenticado.' });
+    try {
+      req.user = jwt.verify(header.slice(7), JWT_SECRET);
+      if (ROLE_ORDER.indexOf(req.user.role) < ROLE_ORDER.indexOf(minRole))
+        return res.status(403).json({ error: 'Sem permissão.' });
+      next();
+    } catch {
+      res.status(401).json({ error: 'Sessão expirada. Faça login novamente.' });
+    }
+  };
+}
+
+function wrap(fn) {
+  return async (req, res) => {
+    try { await fn(req, res); }
+    catch (e) { console.error(e.message); res.status(500).json({ error: e.message }); }
+  };
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════════════════════════
+app.post('/api/login', wrap(async (req, res) => {
+  const { email, password } = req.body || {};
+  if (!email || !password)
+    return res.status(400).json({ error: 'Email e password obrigatórios.' });
+
+  const { rows } = await pool.query(
+    'SELECT * FROM utilizadores WHERE email = $1',
+    [email.trim().toLowerCase()]
+  );
+  const user = rows[0];
+
+  if (!user || !await bcrypt.compare(password, user.password_hash))
+    return res.status(401).json({ error: 'Credenciais inválidas.' });
+  if (!user.ativo)
+    return res.status(401).json({ error: 'Conta inativa. Contacte o administrador.' });
+
+  const token = jwt.sign(
+    { id: user.id, role: user.role, nome: user.nome, subregiao: user.subregiao },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES }
+  );
+  res.json({ token, id: user.id, role: user.role, nome: user.nome, subregiao: user.subregiao });
+}));
+
+// ══════════════════════════════════════════════════════════════════
+//  OCORRÊNCIAS
+// ══════════════════════════════════════════════════════════════════
+app.get('/api/ocorrencias', requireAuth('visualizador'), wrap(async (req, res) => {
+  let q = 'SELECT * FROM ocorrencias ORDER BY created_at DESC';
+  let params = [];
+  if (req.user.role === 'gestor' && req.user.subregiao) {
+    q = 'SELECT * FROM ocorrencias WHERE subregiao = $1 ORDER BY created_at DESC';
+    params = [req.user.subregiao];
+  }
+  const { rows } = await pool.query(q, params);
+  res.json(rows);
+}));
+
+app.post('/api/ocorrencias', requireAuth('gestor'), wrap(async (req, res) => {
+  const b = req.body;
+  const { rows } = await pool.query(
+    `INSERT INTO ocorrencias
+       (local_ignicao, codigo_ocorrencia, subregiao, concelho, obs, inicio, status, created_by)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+    [b.local_ignicao, b.codigo_ocorrencia || null, b.subregiao || null, b.concelho || null,
+     b.obs || null, b.inicio || null, b.status || 'active', req.user.id]
+  );
+  res.json(rows[0]);
+}));
+
+app.patch('/api/ocorrencias/:id', requireAuth('gestor'), wrap(async (req, res) => {
+  const b = req.body;
+  await pool.query(
+    `UPDATE ocorrencias
+     SET local_ignicao      = COALESCE($1, local_ignicao),
+         codigo_ocorrencia  = COALESCE($2, codigo_ocorrencia),
+         subregiao          = COALESCE($3, subregiao),
+         concelho           = COALESCE($4, concelho),
+         obs                = COALESCE($5, obs),
+         inicio             = COALESCE($6, inicio),
+         status             = COALESCE($7, status)
+     WHERE id=$8`,
+    [b.local_ignicao || null, b.codigo_ocorrencia || null, b.subregiao || null, b.concelho || null,
+     b.obs || null, b.inicio || null, b.status || null, req.params.id]
+  );
+  res.json({ ok: true });
+}));
+
+app.delete('/api/ocorrencias/:id', requireAuth('admin'), wrap(async (req, res) => {
+  await pool.query('DELETE FROM ocorrencias WHERE id = $1', [req.params.id]);
+  res.json({ ok: true });
+}));
+
+// ══════════════════════════════════════════════════════════════════
+//  MEIOS
+// ══════════════════════════════════════════════════════════════════
+const MEIO_COLS = [
+  'ocorrencia_id','eq','tipo','matricula','concelho','setor',
+  'operacionais','responsavel','contacto',
+  'data_despacho','hora_despacho','data_saida_entidade','hora_saida_entidade',
+  'data_chegada','hora_chegada','horas_max','limite_op','limite_op_date',
+  'data_demob','hora_demob','data_chegada_entidade','hora_chegada_entidade',
+  'km','missao','estado','obs',
+  'previsto_data','previsto_hora',
+];
+
+app.get('/api/meios', requireAuth('visualizador'), wrap(async (req, res) => {
+  const [{ rows: meios }, { rows: operativos }, { rows: eventos }] = await Promise.all([
+    pool.query('SELECT * FROM meios ORDER BY created_at'),
+    pool.query('SELECT * FROM meios_operativos ORDER BY meio_id, ordem'),
+    pool.query('SELECT * FROM meios_eventos ORDER BY ts DESC'),
+  ]);
+  const result = meios.map(m => ({
+    ...m,
+    meios_operativos: operativos.filter(o => o.meio_id === m.id),
+    meios_eventos:    eventos.filter(e => e.meio_id === m.id),
+  }));
+  res.json(result);
+}));
+
+app.post('/api/meios', requireAuth('gestor'), wrap(async (req, res) => {
+  const b    = req.body;
+  const cols = [...MEIO_COLS, 'created_by'];
+  const vals = [...MEIO_COLS.map(c => b[c] ?? null), req.user.id];
+  const ph   = cols.map((_, i) => `$${i + 1}`).join(',');
+  const { rows } = await pool.query(
+    `INSERT INTO meios (${cols.join(',')}) VALUES (${ph}) RETURNING *`, vals
+  );
+  res.json(rows[0]);
+}));
+
+app.patch('/api/meios/:id', requireAuth('operacional'), wrap(async (req, res) => {
+  const b = req.body;
+  // Only update columns present in the body — partial rows from quick actions
+  // must not null out NOT NULL columns like ocorrencia_id or eq.
+  const cols = MEIO_COLS.filter(c => c in b);
+  if (!cols.length) return res.json({ ok: true });
+  const sets = cols.map((c, i) => `${c}=$${i + 1}`).join(',');
+  const vals = [...cols.map(c => b[c] ?? null), req.params.id];
+  await pool.query(`UPDATE meios SET ${sets} WHERE id=$${cols.length + 1}`, vals);
+  res.json({ ok: true });
+}));
+
+app.delete('/api/meios/:id', requireAuth('gestor'), wrap(async (req, res) => {
+  await pool.query('DELETE FROM meios WHERE id = $1', [req.params.id]);
+  res.json({ ok: true });
+}));
+
+// Replace all operativos for a meio in one shot
+app.put('/api/meios/:id/operativos', requireAuth('operacional'), wrap(async (req, res) => {
+  const rows = req.body.rows || [];
+  await pool.query('DELETE FROM meios_operativos WHERE meio_id = $1', [req.params.id]);
+  if (rows.length) {
+    const vals = rows.flatMap((r, i) => [req.params.id, r.nome, i]);
+    const ph   = rows.map((_, i) => `($${i * 3 + 1},$${i * 3 + 2},$${i * 3 + 3})`).join(',');
+    await pool.query(`INSERT INTO meios_operativos (meio_id,nome,ordem) VALUES ${ph}`, vals);
+  }
+  res.json({ ok: true });
+}));
+
+app.post('/api/meios_eventos', requireAuth('operacional'), wrap(async (req, res) => {
+  const b = req.body;
+  await pool.query(
+    'INSERT INTO meios_eventos (meio_id, ts, msg, user_id) VALUES ($1,$2,$3,$4)',
+    [b.meio_id, b.ts || new Date().toISOString(), b.msg, req.user.id]
+  );
+  res.json({ ok: true });
+}));
+
+// ══════════════════════════════════════════════════════════════════
+//  OCORRÊNCIAS EVENTOS
+// ══════════════════════════════════════════════════════════════════
+app.get('/api/ocorrencias_eventos', requireAuth('visualizador'), wrap(async (req, res) => {
+  const { rows } = await pool.query('SELECT * FROM ocorrencias_eventos ORDER BY ts DESC');
+  res.json(rows);
+}));
+
+app.post('/api/ocorrencias_eventos', requireAuth('operacional'), wrap(async (req, res) => {
+  const b = req.body;
+  await pool.query(
+    'INSERT INTO ocorrencias_eventos (ocorrencia_id, ts, tag, meio_label, msg, user_id) VALUES ($1,$2,$3,$4,$5,$6)',
+    [b.ocorrencia_id, b.ts || new Date().toISOString(), b.tag || 'occ', b.meio_label || null, b.msg, req.user.id]
+  );
+  res.json({ ok: true });
+}));
+
+// ══════════════════════════════════════════════════════════════════
+//  EQUIPAS
+// ══════════════════════════════════════════════════════════════════
+app.get('/api/equipas', requireAuth('visualizador'), wrap(async (req, res) => {
+  const { rows } = await pool.query('SELECT * FROM equipas ORDER BY nome');
+  res.json(rows);
+}));
+
+app.post('/api/equipas', requireAuth('gestor'), wrap(async (req, res) => {
+  const b = req.body;
+  const { rows } = await pool.query(
+    'INSERT INTO equipas (nome, tipo, tipo_equipa, subregiao, concelho, capacidade, origem, notas) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',
+    [b.nome, b.tipo || null, b.tipo_equipa || null, b.subregiao || null, b.concelho || null,
+     b.capacidade || 0, b.origem || null, b.notas || null]
+  );
+  res.json(rows[0]);
+}));
+
+app.patch('/api/equipas/:id', requireAuth('gestor'), wrap(async (req, res) => {
+  const b = req.body;
+  await pool.query(
+    `UPDATE equipas SET nome=$1, tipo=$2, tipo_equipa=$3, subregiao=$4, concelho=$5,
+     capacidade=$6, origem=$7, notas=$8 WHERE id=$9`,
+    [b.nome, b.tipo || null, b.tipo_equipa || null, b.subregiao || null, b.concelho || null,
+     b.capacidade || 0, b.origem || null, b.notas || null, req.params.id]
+  );
+  res.json({ ok: true });
+}));
+
+app.delete('/api/equipas/:id', requireAuth('gestor'), wrap(async (req, res) => {
+  await pool.query('DELETE FROM equipas WHERE id = $1', [req.params.id]);
+  res.json({ ok: true });
+}));
+
+// ══════════════════════════════════════════════════════════════════
+//  OPERACIONAIS PREDEFINIDOS
+// ══════════════════════════════════════════════════════════════════
+app.get('/api/operacionais', requireAuth('visualizador'), wrap(async (req, res) => {
+  const { rows } = await pool.query('SELECT * FROM operacionais_predefinidos ORDER BY nome');
+  res.json(rows);
+}));
+
+app.post('/api/operacionais', requireAuth('gestor'), wrap(async (req, res) => {
+  const b = req.body;
+  const { rows } = await pool.query(
+    'INSERT INTO operacionais_predefinidos (nome, categoria, contacto, notas) VALUES ($1,$2,$3,$4) RETURNING *',
+    [b.nome, b.categoria || null, b.contacto || null, b.notas || null]
+  );
+  res.json(rows[0]);
+}));
+
+app.patch('/api/operacionais/:id', requireAuth('gestor'), wrap(async (req, res) => {
+  const b = req.body;
+  await pool.query(
+    'UPDATE operacionais_predefinidos SET nome=$1, categoria=$2, contacto=$3, notas=$4 WHERE id=$5',
+    [b.nome, b.categoria || null, b.contacto || null, b.notas || null, req.params.id]
+  );
+  res.json({ ok: true });
+}));
+
+app.delete('/api/operacionais/:id', requireAuth('gestor'), wrap(async (req, res) => {
+  await pool.query('DELETE FROM operacionais_predefinidos WHERE id = $1', [req.params.id]);
+  res.json({ ok: true });
+}));
+
+// ══════════════════════════════════════════════════════════════════
+//  UTILIZADORES (admin only)
+// ══════════════════════════════════════════════════════════════════
+app.get('/api/utilizadores', requireAuth('admin'), wrap(async (req, res) => {
+  const { rows } = await pool.query(
+    'SELECT id, email, nome, role, subregiao, ativo, created_at FROM utilizadores ORDER BY created_at'
+  );
+  res.json(rows);
+}));
+
+app.post('/api/utilizadores', requireAuth('admin'), wrap(async (req, res) => {
+  const { email, nome, password, role, subregiao } = req.body || {};
+  if (!email || !nome || !password)
+    return res.status(400).json({ error: 'Email, nome e password obrigatórios.' });
+  const hash = await bcrypt.hash(password, 12);
+  const { rows } = await pool.query(
+    `INSERT INTO utilizadores (email, nome, password_hash, role, subregiao, ativo)
+     VALUES ($1,$2,$3,$4,$5,true)
+     RETURNING id, email, nome, role, subregiao, ativo, created_at`,
+    [email.trim().toLowerCase(), nome.trim(), hash, role || 'visualizador', subregiao || null]
+  );
+  res.json(rows[0]);
+}));
+
+app.patch('/api/utilizadores/:id', requireAuth('admin'), wrap(async (req, res) => {
+  const { role, subregiao, ativo, password } = req.body || {};
+  if (password !== undefined) {
+    const hash = await bcrypt.hash(password, 12);
+    await pool.query('UPDATE utilizadores SET password_hash=$1 WHERE id=$2', [hash, req.params.id]);
+  }
+  if (role !== undefined)
+    await pool.query('UPDATE utilizadores SET role=$1 WHERE id=$2', [role, req.params.id]);
+  if (subregiao !== undefined)
+    await pool.query('UPDATE utilizadores SET subregiao=$1 WHERE id=$2', [subregiao || null, req.params.id]);
+  if (ativo !== undefined)
+    await pool.query('UPDATE utilizadores SET ativo=$1 WHERE id=$2', [ativo, req.params.id]);
+  res.json({ ok: true });
+}));
+
+app.delete('/api/utilizadores/:id', requireAuth('admin'), wrap(async (req, res) => {
+  if (req.params.id === req.user.id)
+    return res.status(400).json({ error: 'Não pode eliminar a sua própria conta.' });
+  await pool.query('DELETE FROM utilizadores WHERE id = $1', [req.params.id]);
+  res.json({ ok: true });
+}));
+
+// ─── Proxy fogos.pt (browser directo é bloqueado por Cloudflare) ─
+app.get('/api/fogos/active', requireAuth('visualizador'), wrap(async (req, res) => {
+  const r = await fetch('https://api.fogos.pt/v2/incidents/active', {
+    headers: { 'User-Agent': 'GestaoMeiosGFR/1.0' },
+  });
+  if (!r.ok) return res.status(502).json({ success: false, error: 'fogos.pt indisponível' });
+  const data = await r.json();
+  res.json(data);
+}));
+
+// ─── Startup migrations ──────────────────────────────────────────
+async function runMigrations() {
+  // Add new columns (idempotent)
+  await pool.query(`ALTER TABLE equipas ADD COLUMN IF NOT EXISTS tipo_equipa TEXT`);
+  await pool.query(`ALTER TABLE equipas ADD COLUMN IF NOT EXISTS subregiao   TEXT`);
+  await pool.query(`ALTER TABLE equipas ADD COLUMN IF NOT EXISTS concelho    TEXT`);
+
+  // Previsto state: new columns + extend CHECK constraint
+  await pool.query(`ALTER TABLE meios ADD COLUMN IF NOT EXISTS previsto_data DATE`);
+  await pool.query(`ALTER TABLE meios ADD COLUMN IF NOT EXISTS previsto_hora TIME`);
+  // Drop old CHECK and re-add with 'previsto' included (idempotent via constraint name)
+  await pool.query(`
+    DO $$ BEGIN
+      IF EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'meios_estado_check' AND conrelid = 'meios'::regclass
+      ) THEN
+        ALTER TABLE meios DROP CONSTRAINT meios_estado_check;
+      END IF;
+    END $$
+  `);
+  await pool.query(`
+    ALTER TABLE meios ADD CONSTRAINT meios_estado_check
+      CHECK (estado IN ('transito','operacao','descanso','desmobilizado','previsto'))
+  `);
+
+  // Seed ICNF/ANEPC 2026 data if table is empty
+  const { rows: cnt } = await pool.query('SELECT COUNT(*) FROM equipas');
+  if (parseInt(cnt[0].count) === 0) {
+    const fs = require('fs');
+    const sqlPath = require('path').join(__dirname, 'migration_v2_equipas.sql');
+    if (fs.existsSync(sqlPath)) {
+      const sql = fs.readFileSync(sqlPath, 'utf8');
+      await pool.query(sql);
+      console.log('Meios predefinidos ICNF/ANEPC 2026 importados.');
+    }
+  }
+}
+
+// ─── Start ────────────────────────────────────────────────────────
+if (require.main === module) {
+  runMigrations()
+    .then(() => app.listen(PORT, () => console.log(`Gestão Meios a correr na porta ${PORT}`)))
+    .catch(err => { console.error('Erro na migração:', err.message); process.exit(1); });
+}
+
+module.exports = { app, pool };

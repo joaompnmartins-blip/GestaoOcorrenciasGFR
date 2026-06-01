@@ -1,0 +1,28 @@
+{
+  "name": "gestao-meios-gfr",
+  "version": "1.0.0",
+  "description": "Gestão de Meios — ICNF/GFR",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "npm run test:api && npm run test:unit",
+    "test:api": "jest --testPathPattern=tests/api --runInBand --forceExit",
+    "test:unit": "jest --testPathPattern=tests/unit",
+    "test:e2e": "playwright test",
+    "test:all": "npm run test:api && npm run test:unit && npm run test:e2e"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.12.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "jest": "^29.7.0",
+    "supertest": "^7.2.2"
+  }
+}

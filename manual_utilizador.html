@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Manual do Utilizador — Gestão Meios ICNF/GFR</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Barlow+Condensed:wght@400;500;600;700;800&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:       #080d0b;
+      --surface:  #0d1410;
+      --surface2: #121a14;
+      --border:   #1e2b1f;
+      --accent:   #8C961C;
+      --accent2:  #429ABD;
+      --accent3:  #5ab8d6;
+      --text:     #d4e5d0;
+      --muted:    #4d6650;
+      --danger:   #e05050;
+      --success:  #6db86d;
+      --warn:     #c89a2a;
+      --inactive: #2d3d2f;
+      --icnf-blue-light: #429ABD;
+      --icnf-blue-dark:  #21658A;
+      --icnf-green-lime: #8C961C;
+      --icnf-green-dark: #596300;
+    }
+
+    html.theme-light {
+      --bg:       #f0f4f0;
+      --surface:  #ffffff;
+      --surface2: #e8efe8;
+      --border:   #c8d8c8;
+      --accent:   #6b7214;
+      --accent2:  #1e6e99;
+      --accent3:  #1a7a9a;
+      --text:     #1a2a1a;
+      --muted:    #5a7a5a;
+      --danger:   #c03030;
+      --success:  #2e7d2e;
+      --warn:     #8a6010;
+      --inactive: #b0c8b0;
+      --icnf-blue-light: #1e6e99;
+      --icnf-blue-dark:  #184f70;
+      --icnf-green-lime: #6b7214;
+      --icnf-green-dark: #3d4600;
+    }
+    html.theme-light body::before { display:none; }
+    html.theme-light .cover-bar    { background: linear-gradient(90deg, #6b7214, #1e6e99); }
+    html.theme-light .toc-item:hover { background: #e8efe8; }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    html, body {
+      min-height:100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    body::before {
+      content:'';
+      position:fixed; inset:0;
+      background: repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.04) 3px,rgba(0,0,0,.04) 6px);
+      pointer-events:none;
+      z-index:9999;
+    }
+
+    /* ── LAYOUT ── */
+    .wrapper {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    /* ── THEME TOGGLE ── */
+    .theme-toggle {
+      position: fixed;
+      top: 20px; right: 20px;
+      display: flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px;
+      border-radius: 2px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 16px;
+      transition: all .15s;
+      z-index: 1000;
+    }
+    .theme-toggle:hover { color: var(--text); border-color: var(--inactive); }
+
+    /* ── COVER ── */
+    .cover {
+      padding: 56px 0 48px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 48px;
+    }
+    .cover-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--icnf-green-lime);
+      margin-bottom: 12px;
+    }
+    .cover-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 52px;
+      font-weight: 800;
+      letter-spacing: .02em;
+      line-height: 1;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .cover-title span { color: var(--icnf-blue-light); }
+    .cover-sub {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      font-weight: 400;
+      color: var(--muted);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+    .cover-bar {
+      height: 3px;
+      width: 120px;
+      background: linear-gradient(90deg, var(--icnf-green-lime), var(--icnf-blue-light));
+      border-radius: 2px;
+      margin-bottom: 28px;
+    }
+    .cover-meta {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+    .cover-meta strong { color: var(--text); }
+
+    /* ── TABLE OF CONTENTS ── */
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 24px 28px;
+      margin-bottom: 48px;
+    }
+    .toc-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .toc-list { list-style: none; }
+    .toc-item {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding: 5px 8px;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: background .1s;
+      text-decoration: none;
+      color: var(--text);
+    }
+    .toc-item:hover { background: var(--surface2); }
+    .toc-num {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--accent);
+      min-width: 20px;
+    }
+    .toc-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .toc-sub {
+      margin-left: 28px;
+    }
+    .toc-sub .toc-num { color: var(--muted); font-size: 9px; }
+    .toc-sub .toc-label { font-size: 12px; font-weight: 500; color: var(--muted); }
+    .toc-sub .toc-item:hover .toc-label { color: var(--text); }
+
+    /* ── SECTIONS ── */
+    .section {
+      margin-bottom: 56px;
+      scroll-margin-top: 24px;
+    }
+    .section-num {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+    .section-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-title span { color: var(--icnf-blue-light); }
+
+    .subsection {
+      margin: 28px 0 0;
+      scroll-margin-top: 24px;
+    }
+    .subsection-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--icnf-blue-light);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .subsection-title::before {
+      content: '';
+      display: inline-block;
+      width: 3px;
+      height: 14px;
+      background: var(--icnf-blue-light);
+      border-radius: 1px;
+    }
+
+    p { margin-bottom: 12px; color: var(--text); }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── INFO BOXES ── */
+    .info-box {
+      border-left: 3px solid var(--accent2);
+      background: rgba(66,154,189,.06);
+      padding: 14px 18px;
+      border-radius: 0 2px 2px 0;
+      margin: 16px 0;
+      font-size: 13px;
+    }
+    .info-box.warn {
+      border-left-color: var(--warn);
+      background: rgba(200,154,42,.06);
+    }
+    .info-box.ok {
+      border-left-color: var(--success);
+      background: rgba(109,184,109,.06);
+    }
+    .info-box.danger {
+      border-left-color: var(--danger);
+      background: rgba(224,80,80,.06);
+    }
+    .info-box-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 6px;
+    }
+    .info-box.warn  .info-box-title  { color: var(--warn); }
+    .info-box.ok    .info-box-title  { color: var(--success); }
+    .info-box.danger .info-box-title { color: var(--danger); }
+
+    /* ── STEPS ── */
+    .steps { margin: 16px 0; }
+    .step {
+      display: flex;
+      gap: 14px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(30,43,31,.6);
+    }
+    .step:last-child { border-bottom: none; }
+    .step-num {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      min-width: 22px;
+      padding-top: 1px;
+    }
+    .step-body { flex: 1; }
+    .step-body strong {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      letter-spacing: .04em;
+      font-size: 14px;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .step-body p { margin-bottom: 0; font-size: 13px; color: var(--muted); }
+
+    /* ── ROLE TABLE ── */
+    .role-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+    .role-table th {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .role-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(30,43,31,.5);
+      vertical-align: top;
+    }
+    .role-table tr:last-child td { border-bottom: none; }
+    .role-table tr:hover td { background: rgba(30,43,31,.3); }
+
+    /* ── ROLE BADGES ── */
+    .role-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: .12em;
+      padding: 3px 8px;
+      border-radius: 2px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      display: inline-block;
+    }
+    .role-admin       { background:rgba(66,154,189,.14);  color:var(--icnf-blue-light); border:1px solid rgba(66,154,189,.35); }
+    .role-gestor      { background:rgba(140,150,28,.12);  color:var(--accent);           border:1px solid rgba(140,150,28,.3); }
+    .role-operacional { background:rgba(90,184,214,.10);  color:var(--accent3);          border:1px solid rgba(90,184,214,.25); }
+    .role-visualizador{ background:rgba(89,99,0,.15);     color:var(--muted);            border:1px solid var(--border); }
+
+    /* ── STATE BADGES ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 2px 8px; border-radius: 20px;
+      font-size: 10px; font-weight: 600;
+      font-family: 'IBM Plex Mono', monospace;
+      letter-spacing: .03em;
+    }
+    .badge-transito   { background:rgba(66,154,189,.15);  color:var(--icnf-blue-light); border:1px solid rgba(66,154,189,.35); }
+    .badge-operacao   { background:rgba(109,184,109,.12); color:var(--success);          border:1px solid rgba(109,184,109,.3); }
+    .badge-descanso   { background:rgba(200,154,42,.12);  color:var(--warn);             border:1px solid rgba(200,154,42,.3); }
+    .badge-desmob     { background:rgba(45,61,47,.4);     color:var(--muted);            border:1px solid var(--border); }
+
+    /* ── KEY COMBOS ── */
+    kbd {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 2px 6px;
+      color: var(--text);
+    }
+
+    /* ── INLINE CODE ── */
+    code {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 1px 5px;
+      color: var(--accent3);
+    }
+
+    /* ── UI LABEL ── */
+    .ui-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      background: rgba(140,150,28,.08);
+      border: 1px solid rgba(140,150,28,.22);
+      padding: 1px 7px;
+      border-radius: 2px;
+      color: var(--accent);
+      white-space: nowrap;
+      display: inline-block;
+    }
+
+    /* ── ICON ROW ── */
+    .icon-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 14px 0;
+    }
+    .icon-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 8px 12px;
+      font-size: 12px;
+      min-width: 160px;
+    }
+    .icon-item .icon { font-size: 16px; }
+    .icon-item .label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; font-size: 12px; }
+    .icon-item .desc  { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+    /* ── SYNC STATES ── */
+    .sync-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      padding: 3px 10px;
+      border-radius: 2px;
+      border: 1px solid;
+    }
+    .sync-online   { background:rgba(109,184,109,.08); color:var(--success);         border-color:rgba(109,184,109,.3); }
+    .sync-pending  { background:rgba(200,154,42,.08);  color:var(--warn);            border-color:rgba(200,154,42,.3); }
+    .sync-offline  { background:rgba(224,80,80,.08);   color:var(--danger);          border-color:rgba(224,80,80,.3); animation: pulse 2s infinite; }
+    .sync-syncing  { background:rgba(90,184,214,.08);  color:var(--accent3);         border-color:rgba(90,184,214,.3); }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+
+    /* ── DOIS-COLUNAS ── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 16px 0;
+    }
+    @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 16px 18px;
+    }
+    .card-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    /* ── DIVIDER ── */
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 32px 0;
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: .1em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .footer-logo {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: .04em;
+    }
+    .footer-logo span { color: var(--icnf-blue-light); }
+
+    /* ── PRINT ── */
+    @media print {
+      body::before { display:none; }
+      .theme-toggle { display:none; }
+      .toc-item { color: var(--text) !important; }
+      a { text-decoration: none; color: inherit; }
+    }
+  </style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="document.documentElement.classList.toggle('theme-light')" title="Alternar tema">☀</button>
+
+<div class="wrapper">
+
+  <!-- ══════ CAPA ══════ -->
+  <div class="cover">
+    <div class="cover-tag">ICNF · Gestão de Fogos Rurais · Documentação</div>
+    <div class="cover-title">Gestão<br><span>Meios</span></div>
+    <div class="cover-sub">Manual do Utilizador</div>
+    <div class="cover-bar"></div>
+    <div class="cover-meta">
+      <strong>Versão</strong> 17 &nbsp;·&nbsp;
+      <strong>Audiência</strong> Operacionais, Gestores e Administradores &nbsp;·&nbsp;
+      <strong>Sistema</strong> GFR / ICNF<br>
+      <strong>Idioma</strong> Português (Portugal)
+    </div>
+  </div>
+
+  <!-- ══════ ÍNDICE ══════ -->
+  <div class="toc">
+    <div class="toc-title">Índice</div>
+    <ul class="toc-list">
+      <li><a class="toc-item" href="#sec-intro"><span class="toc-num">01</span><span class="toc-label">Introdução e Acesso</span></a></li>
+      <li class="toc-sub">
+        <a class="toc-item" href="#sec-login"><span class="toc-num">1.1</span><span class="toc-label">Autenticação</span></a>
+        <a class="toc-item" href="#sec-roles"><span class="toc-num">1.2</span><span class="toc-label">Perfis e Permissões</span></a>
+        <a class="toc-item" href="#sec-interface"><span class="toc-num">1.3</span><span class="toc-label">Interface Geral</span></a>
+      </li>
+      <li><a class="toc-item" href="#sec-ocorrencias"><span class="toc-num">02</span><span class="toc-label">Ocorrências</span></a></li>
+      <li class="toc-sub">
+        <a class="toc-item" href="#sec-occ-nova"><span class="toc-num">2.1</span><span class="toc-label">Criar Nova Ocorrência</span></a>
+        <a class="toc-item" href="#sec-occ-fogos"><span class="toc-num">2.2</span><span class="toc-label">Importar de Fogos.pt</span></a>
+        <a class="toc-item" href="#sec-occ-detalhe"><span class="toc-num">2.3</span><span class="toc-label">Detalhe da Ocorrência</span></a>
+        <a class="toc-item" href="#sec-occ-fechar"><span class="toc-num">2.4</span><span class="toc-label">Fechar e Reabrir</span></a>
+      </li>
+      <li><a class="toc-item" href="#sec-meios"><span class="toc-num">03</span><span class="toc-label">Gestão de Meios</span></a></li>
+      <li class="toc-sub">
+        <a class="toc-item" href="#sec-meios-add"><span class="toc-num">3.1</span><span class="toc-label">Adicionar Meio</span></a>
+        <a class="toc-item" href="#sec-meios-estados"><span class="toc-num">3.2</span><span class="toc-label">Estados e Acções Rápidas</span></a>
+        <a class="toc-item" href="#sec-meios-limite"><span class="toc-num">3.3</span><span class="toc-label">Limite Operacional</span></a>
+        <a class="toc-item" href="#sec-meios-log"><span class="toc-num">3.4</span><span class="toc-label">Log de Eventos</span></a>
+      </li>
+      <li><a class="toc-item" href="#sec-catalogo"><span class="toc-num">04</span><span class="toc-label">Catálogo de Meios Predefinidos</span></a></li>
+      <li><a class="toc-item" href="#sec-arquivo"><span class="toc-num">05</span><span class="toc-label">Arquivo</span></a></li>
+      <li><a class="toc-item" href="#sec-utilizadores"><span class="toc-num">06</span><span class="toc-label">Gestão de Utilizadores</span></a></li>
+      <li><a class="toc-item" href="#sec-offline"><span class="toc-num">07</span><span class="toc-label">Modo Offline e Sincronização</span></a></li>
+      <li><a class="toc-item" href="#sec-export"><span class="toc-num">08</span><span class="toc-label">Exportação de Relatórios</span></a></li>
+    </ul>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       1. INTRODUÇÃO E ACESSO
+  ══════════════════════════════════════ -->
+  <div class="section" id="sec-intro">
+    <div class="section-num">01 — Introdução e Acesso</div>
+    <div class="section-title">Introdução e <span>Acesso</span></div>
+    <p>
+      O sistema <strong>Gestão Meios</strong> é uma aplicação operacional destinada ao acompanhamento em tempo real dos meios mobilizados em ocorrências de incêndio rural, operada no âmbito do ICNF/GFR. Permite registar ocorrências, gerir meios (veículos e equipas), controlar estados operacionais e exportar relatórios de missão.
+    </p>
+    <p>
+      A aplicação é acedida via browser, não requer instalação e funciona em modo offline quando a ligação à internet não está disponível, sincronizando automaticamente quando a ligação é restaurada.
+    </p>
+
+    <div class="subsection" id="sec-login">
+      <div class="subsection-title">1.1 — Autenticação</div>
+      <p>O acesso é controlado por utilizador e palavra-passe. Não existe auto-registo — as contas são criadas pelo Administrador.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <strong>Abrir a aplicação</strong>
+            <p>Aceder ao URL da aplicação no browser. É apresentado o ecrã de autenticação.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <strong>Introduzir credenciais</strong>
+            <p>Preencher o campo <strong>E-mail</strong> e <strong>Password</strong> e clicar em <ui-label style="display:inline;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;">Entrar</ui-label>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <strong>Sessão activa</strong>
+            <p>A sessão tem duração de 12 horas. Ao expirar, o sistema redireciona para o ecrã de login sem perda de dados offline.</p>
+          </div>
+        </div>
+      </div>
+      <div class="info-box warn">
+        <div class="info-box-title">Atenção</div>
+        A palavra-passe é definida pelo Administrador aquando da criação da conta. Caso necessite de alterar, contacte o Administrador do sistema.
+      </div>
+    </div>
+
+    <div class="subsection" id="sec-roles">
+      <div class="subsection-title">1.2 — Perfis e Permissões</div>
+      <p>Existem quatro perfis de utilizador, com acumulação de permissões da esquerda para a direita:</p>
+      <table class="role-table">
+        <thead>
+          <tr>
+            <th>Perfil</th>
+            <th>O que pode fazer</th>
+            <th>Restrições</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="role-badge role-visualizador">visualizador</span></td>
+            <td>Consultar ocorrências, meios, arquivo e log de eventos.</td>
+            <td>Não pode criar, editar nem fechar ocorrências ou meios.</td>
+          </tr>
+          <tr>
+            <td><span class="role-badge role-operacional">operacional</span></td>
+            <td>Tudo o do Visualizador, mais: alterar estado dos meios (Activar Op., Descanso, Desmobilizar), atribuir sector, adicionar observações e eventos de meio.</td>
+            <td>Não pode criar/editar/eliminar ocorrências ou meios, nem gerir utilizadores.</td>
+          </tr>
+          <tr>
+            <td><span class="role-badge role-gestor">gestor</span></td>
+            <td>Tudo o do Operacional, mais: criar e fechar ocorrências, adicionar/editar/eliminar meios, gerir o catálogo de meios predefinidos. Restrito à sua sub-região se tiver uma atribuída.</td>
+            <td>Não pode eliminar ocorrências nem gerir utilizadores.</td>
+          </tr>
+          <tr>
+            <td><span class="role-badge role-admin">admin</span></td>
+            <td>Acesso total: tudo o do Gestor, mais: eliminar ocorrências, criar e gerir utilizadores, ver todas as sub-regiões.</td>
+            <td>—</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="info-box">
+        <div class="info-box-title">Sub-região (Gestor)</div>
+        Um Gestor com sub-região atribuída vê e gere apenas as ocorrências da sua sub-região. O Administrador vê tudo e pode filtrar por sub-região.
+      </div>
+    </div>
+
+    <div class="subsection" id="sec-interface">
+      <div class="subsection-title">1.3 — Interface Geral</div>
+      <p>A interface divide-se em três áreas principais:</p>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Barra Lateral (Navegação)</div>
+          <p style="font-size:13px;">Links para as páginas principais: <strong>Ocorrências</strong>, <strong>Meios</strong> (catálogo), <strong>Arquivo</strong> e <strong>Utilizadores</strong> (só Admin). O rodapé mostra o estado do sistema, hora e utilizador activo.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Barra Superior (Topbar)</div>
+          <p style="font-size:13px;">Título da página activa, botão <strong>🗺 Fogos Ativos</strong> (mapa fogos.pt), botão <strong>+ Nova Ocorrência</strong>, crachá de perfil, indicador de sincronização e toggle de tema claro/escuro.</p>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="card-title">Indicador de Sincronização</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">
+          <span class="sync-state sync-online">● ONLINE</span>
+          <span class="sync-state sync-pending">⚠ N PENDENTES</span>
+          <span class="sync-state sync-syncing">⟳ A SINCRONIZAR</span>
+          <span class="sync-state sync-offline">📵 OFFLINE</span>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:10px;">Clicar no indicador abre o painel de sincronização com a fila de operações pendentes.</p>
+      </div>
+      <div class="info-box" style="margin-top:16px;">
+        <div class="info-box-title">Tema</div>
+        O botão <kbd>☀</kbd> na barra superior alterna entre tema escuro (predefinido) e tema claro.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       2. OCORRÊNCIAS
+  ══════════════════════════════════════ -->
+  <div class="section" id="sec-ocorrencias">
+    <div class="section-num">02 — Ocorrências</div>
+    <div class="section-title"><span>Ocorrências</span></div>
+    <p>
+      A página <strong>Ocorrências</strong> é o ecrã principal da aplicação. Apresenta todos os incêndios activos em formato de cartões, com indicadores de meios mobilizados, sub-região e estado. Clicar num cartão abre o detalhe da ocorrência.
+    </p>
+
+    <div class="subsection" id="sec-occ-nova">
+      <div class="subsection-title">2.1 — Criar Nova Ocorrência</div>
+      <p>Requer perfil <span class="role-badge role-gestor">gestor</span> ou superior.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <strong>Abrir o formulário</strong>
+            <p>Clicar em <kbd>+ Nova Ocorrência</kbd> na barra superior.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <strong>Preencher os dados obrigatórios</strong>
+            <p><strong>Local de Ignição</strong> — nome do local (campo obrigatório). Os restantes campos (código, sub-região, concelho, data/hora de início, observações) são opcionais mas recomendados.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <strong>Gravar</strong>
+            <p>Clicar em <kbd>Criar Ocorrência</kbd>. A ocorrência fica imediatamente visível na lista e pode receber meios.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subsection" id="sec-occ-fogos">
+      <div class="subsection-title">2.2 — Importar de Fogos.pt</div>
+      <p>Requer perfil <span class="role-badge role-gestor">gestor</span> ou superior.</p>
+      <p>
+        O botão <kbd>🗺 Fogos Ativos</kbd> na barra superior abre um painel com o mapa em tempo real de ocorrências activas de <strong>fogos.pt</strong>. Os dados são obtidos através do servidor da aplicação (proxy), pelo que requerem ligação ao servidor.
+      </p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <strong>Seleccionar a ocorrência no mapa ou na lista</strong>
+            <p>Clicar num marcador no mapa ou num item da lista lateral para destacar a ocorrência. É mostrado o número de meios aéreos e terrestres reportados.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <strong>Pré-preencher o formulário</strong>
+            <p>Clicar em <kbd>Usar esta ocorrência</kbd>. O formulário de nova ocorrência é aberto com os campos Local de Ignição, Sub-região, Concelho e hora de início pré-preenchidos a partir dos dados do fogos.pt.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <strong>Confirmar e gravar</strong>
+            <p>Rever os dados pré-preenchidos, completar campos adicionais se necessário, e clicar em <kbd>Criar Ocorrência</kbd>.</p>
+          </div>
+        </div>
+      </div>
+      <div class="info-box">
+        <div class="info-box-title">Nota</div>
+        Os dados do fogos.pt são actualizados ao abrir o painel. O botão <kbd>⟳ Actualizar</kbd> força uma nova consulta.
+      </div>
+    </div>
+
+    <div class="subsection" id="sec-occ-detalhe">
+      <div class="subsection-title">2.3 — Detalhe da Ocorrência</div>
+      <p>Clicar num cartão de ocorrência abre a vista de detalhe com:</p>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Painel de Informação</div>
+          <p style="font-size:13px;">Local de ignição, código de ocorrência, sub-região, concelho, hora de início e observações. Os campos podem ser editados por Gestores.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Estatísticas em Tempo Real</div>
+          <p style="font-size:13px;">Contadores de meios por estado: em trânsito, em operação, em descanso, desmobilizados e total de operacionais mobilizados.</p>
+        </div>
+      </div>
+      <p style="margin-top:16px;">A lista de meios está organizada por <strong>sector</strong> (PC, ALFA, BRAVO, CHARLIE, etc.), com cartão individual por meio mostrando designação, tipo, matrícula, responsável, estado e botões de acção rápida.</p>
+      <p>O <strong>Log de Ocorrência</strong> (separador lateral) regista cronologicamente todos os eventos: adições de meios, mudanças de estado, anotações e encerramento.</p>
+    </div>
+
+    <div class="subsection" id="sec-occ-fechar">
+      <div class="subsection-title">2.4 — Fechar e Reabrir Ocorrência</div>
+      <p>Requer perfil <span class="role-badge role-gestor">gestor</span> ou superior.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <strong>Fechar</strong>
+            <p>Na vista de detalhe, clicar em <kbd>Fechar Ocorrência</kbd>. É pedida confirmação. Após fechar, a ocorrência passa para o Arquivo e deixa de aparecer na lista principal.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <strong>Reabrir</strong>
+            <p>No Arquivo, localizar a ocorrência e clicar em <kbd>↩ Reabrir</kbd>. A ocorrência volta à lista activa com todos os meios e histórico intactos.</p>
+          </div>
+        </div>
+      </div>
+      <div class="info-box danger">
+        <div class="info-box-title">Eliminação permanente</div>
+        A eliminação de uma ocorrência (e de todos os meios e eventos associados) é irreversível e requer perfil <span class="role-badge role-admin" style="font-size:8px;">admin</span>.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       3. GESTÃO DE MEIOS
+  ══════════════════════════════════════ -->
+  <div class="section" id="sec-meios">
+    <div class="section-num">03 — Gestão de Meios</div>
+    <div class="section-title">Gestão de <span>Meios</span></div>
+    <p>
+      Cada ocorrência pode receber um número ilimitado de meios (veículos, equipas ou outros recursos). Os meios são geridos na vista de detalhe da ocorrência.
+    </p>
+
+    <div class="subsection" id="sec-meios-add">
+      <div class="subsection-title">3.1 — Adicionar Meio</div>
+      <p>Requer perfil <span class="role-badge role-gestor">gestor</span> ou superior.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <strong>Abrir o formulário</strong>
+            <p>Na vista de detalhe, clicar em <kbd>+ Adicionar Meio</kbd>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <strong>Seleccionar um meio predefinido (recomendado)</strong>
+            <p>Utilizar os filtros <strong>Tipo Equipa</strong>, <strong>Sub-Região</strong> e <strong>Concelho</strong> para restringir a lista. Seleccionar a equipa na lista — os campos <strong>Designação</strong>, <strong>Tipo</strong>, <strong>N.º Operacionais</strong> e <strong>Concelho</strong> são preenchidos automaticamente.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <strong>Completar os dados de mobilização</strong>
+            <p>Preencher <strong>Responsável</strong>, <strong>Contacto</strong>, <strong>Data/Hora de Despacho</strong>, <strong>Sector</strong>, <strong>Horas Máx. de Operação</strong> e a missão atribuída. Os campos de saída da entidade e chegada podem ser preenchidos depois.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <div class="step-body">
+            <strong>Adicionar operacionais (opcional)</strong>
+            <p>Na secção <strong>Operacionais</strong>, listar os nomes dos elementos da equipa, um por campo.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">05</div>
+          <div class="step-body">
+            <strong>Gravar</strong>
+            <p>Clicar em <kbd>Adicionar Meio</kbd>. O meio aparece imediatamente no sector correspondente.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subsection" id="sec-meios-estados">
+      <div class="subsection-title">3.2 — Estados e Acções Rápidas</div>
+      <p>Cada meio tem um <strong>estado</strong> que reflecte a sua situação operacional:</p>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin:14px 0;">
+        <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:8px 12px;">
+          <span class="badge badge-transito">● Em Trânsito</span>
+          <span style="font-size:12px;color:var(--muted);">Estado inicial ao adicionar o meio</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:8px 12px;">
+          <span class="badge badge-operacao">● Em Operação</span>
+          <span style="font-size:12px;color:var(--muted);">Meio activo na linha de fogo</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:8px 12px;">
+          <span class="badge badge-descanso">● Descanso</span>
+          <span style="font-size:12px;color:var(--muted);">Meio em pausa operacional</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:8px 12px;">
+          <span class="badge badge-desmob">● Desmobilizado</span>
+          <span style="font-size:12px;color:var(--muted);">Meio retirado da ocorrência</span>
+        </div>
+      </div>
+      <p>As transições de estado são feitas através dos <strong>botões de acção rápida</strong> no cartão do meio (visíveis a partir do perfil <span class="role-badge role-operacional">operacional</span>):</p>
+      <table class="role-table">
+        <thead>
+          <tr><th>Botão</th><th>Acção</th><th>Disponível quando</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><kbd>▶ Activar Op.</kbd></td><td>Transita para <em>Em Operação</em></td><td>Estado ≠ Em Operação</td></tr>
+          <tr><td><kbd>⏸ Descanso</kbd></td><td>Transita para <em>Descanso</em></td><td>Estado = Em Operação</td></tr>
+          <tr><td><kbd>✕ Desmob.</kbd></td><td>Transita para <em>Desmobilizado</em></td><td>Estado ≠ Desmobilizado</td></tr>
+          <tr><td><kbd>⊞ Setor</kbd></td><td>Altera o sector do meio</td><td>Sempre</td></tr>
+          <tr><td><kbd>📝 Obs.</kbd></td><td>Adiciona uma observação ao log</td><td>Sempre</td></tr>
+          <tr><td><kbd>✎ Editar</kbd></td><td>Abre o formulário de edição completo</td><td>Perfil ≥ Gestor</td></tr>
+        </tbody>
+      </table>
+      <div class="info-box ok">
+        <div class="info-box-title">Dica</div>
+        Todas as acções rápidas geram automaticamente uma entrada no Log da Ocorrência e no Log do Meio, com hora e utilizador.
+      </div>
+    </div>
+
+    <div class="subsection" id="sec-meios-limite">
+      <div class="subsection-title">3.3 — Limite Operacional</div>
+      <p>
+        Ao preencher o campo <strong>Horas Máx. de Operação</strong> no formulário do meio, o sistema calcula automaticamente a hora-limite com base na hora de chegada (ou de despacho, se não disponível). O limite é apresentado no cartão do meio e no log.
+      </p>
+      <div class="info-box warn">
+        <div class="info-box-title">Alerta de Limite</div>
+        Quando um meio ultrapassa o limite operacional, o cartão é assinalado visualmente. A responsabilidade de desmobilizar ou renovar a autorização é do Gestor.
+      </div>
+    </div>
+
+    <div class="subsection" id="sec-meios-log">
+      <div class="subsection-title">3.4 — Log de Eventos do Meio</div>
+      <p>
+        Cada meio tem um histórico individual com todos os eventos registados: hora, mensagem e utilizador responsável. Este log é persistido na base de dados e incluído na exportação do relatório de ocorrência.
+      </p>
+      <p>
+        Para adicionar uma entrada manual, utilizar o botão <kbd>📝 Obs.</kbd> no cartão do meio.
+      </p>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       4. CATÁLOGO DE MEIOS PREDEFINIDOS
+  ══════════════════════════════════════ -->
+  <div class="section" id="sec-catalogo">
+    <div class="section-num">04 — Catálogo de Meios Predefinidos</div>
+    <div class="section-title">Catálogo de Meios <span>Predefinidos</span></div>
+    <p>
+      A página <strong>Meios</strong> (barra lateral) contém o catálogo de equipas e veículos pré-carregados com dados de 2026 (868 registos). Estes registos servem de atalho ao preencher o formulário de adição de meio, evitando reintroduzir dados recorrentes.
+    </p>
+    <p>
+      Cada entrada inclui: <strong>Designação</strong>, <strong>Tipo de Veículo</strong>, <strong>Tipo de Equipa</strong>, <strong>Sub-Região</strong>, <strong>Concelho</strong>, <strong>Capacidade</strong> e <strong>Origem</strong>.
+    </p>
+
+    <div class="subsection">
+      <div class="subsection-title">Filtros do Catálogo</div>
+      <p>A tabela de meios predefinidos pode ser filtrada por:</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;">
+        <span class="badge badge-info">Texto (nome)</span>
+        <span class="badge badge-info">Tipo de Veículo</span>
+        <span class="badge badge-info">Tipo de Equipa</span>
+        <span class="badge badge-info">Sub-Região</span>
+        <span class="badge badge-info">Concelho</span>
+      </div>
+      <p>Os mesmos filtros estão disponíveis dentro do formulário de adição de meio, para localizar rapidamente a equipa correcta.</p>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Criar / Editar Entradas</div>
+      <p>Requer perfil <span class="role-badge role-gestor">gestor</span> ou superior. Clicar em <kbd>+ Novo Meio</kbd> abre o formulário. As alterações ao catálogo não afectam meios já mobilizados em ocorrências — apenas os novos despachos.</p>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       5. ARQUIVO
+  ══════════════════════════════════════ -->
+  <div class="section" id="sec-arquivo">
+    <div class="section-num">05 — Arquivo</div>
+    <div class="section-title"><span>Arquivo</span></div>
+    <p>
+      O <strong>Arquivo</strong> contém todas as ocorrências fechadas. Permite consultar o historial completo, filtrar por sub-região (Admin) e por pesquisa livre, reabrir ocorrências e exportar relatórios.
+    </p>
+    <div class="info-box">
+      <div class="info-box-title">Filtros no Arquivo</div>
+      Os Administradores dispõem de um selector de sub-região. Todos os perfis podem pesquisar por local, código, concelho ou sub-região através do campo de pesquisa.
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       6. GESTÃO DE UTILIZADORES
+  ══════════════════════════════════════ -->
+  <div class="section" id="sec-utilizadores">
+    <div class="section-num">06 — Gestão de Utilizadores</div>
+    <div class="section-title">Gestão de <span>Utilizadores</span></div>
+    <p>Exclusivo do perfil <span class="role-badge role-admin">admin</span>. Acessível através de <strong>Utilizadores</strong> na barra lateral.</p>
+
+    <div class="subsection">
+      <div class="subsection-title">Criar Utilizador</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <strong>Clicar em <kbd>+ Novo Utilizador</kbd></strong>
+            <p>Preencher nome, e-mail, palavra-passe e perfil.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <strong>Atribuir Sub-Região (opcional, para Gestores)</strong>
+            <p>Se o perfil for <em>gestor</em>, aparece o selector de sub-região. Um Gestor com sub-região só vê e gere as ocorrências dessa sub-região.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <strong>Gravar</strong>
+            <p>O utilizador fica activo de imediato e pode fazer login com as credenciais definidas.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Desactivar / Activar Conta</div>
+      <p>
+        Uma conta desactivada impede o login sem eliminar o histórico associado ao utilizador. Útil para gerir sazonalidade ou afastamentos temporários. O botão de activação/desactivação está disponível em cada linha da tabela de utilizadores.
+      </p>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Alterar Palavra-passe</div>
+      <p>
+        O Administrador pode definir uma nova palavra-passe para qualquer utilizador através do formulário de edição. O utilizador deve alterar a palavra-passe no primeiro login.
+      </p>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       7. MODO OFFLINE E SINCRONIZAÇÃO
+  ══════════════════════════════════════ -->
+  <div class="section" id="sec-offline">
+    <div class="section-num">07 — Modo Offline e Sincronização</div>
+    <div class="section-title">Modo Offline e <span>Sincronização</span></div>
+    <p>
+      A aplicação detecta automaticamente a perda de ligação à internet e entra em <strong>modo offline</strong>. Neste modo, os dados são servidos a partir de uma cache local (IndexedDB no browser) e todas as operações são enfileiradas localmente para posterior sincronização.
+    </p>
+
+    <div class="subsection">
+      <div class="subsection-title">Comportamento Offline</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">—</div>
+          <div class="step-body">
+            <strong>Cache automático</strong>
+            <p>Após cada carregamento bem-sucedido, a aplicação guarda uma cópia local de ocorrências, meios, catálogo, operacionais e log de eventos. Esta cache sobrevive ao fecho do browser.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">—</div>
+          <div class="step-body">
+            <strong>Operações enfileiradas</strong>
+            <p>Criar ocorrências, adicionar meios, alterar estados — tudo continua a funcionar offline. As operações são guardadas localmente e enviadas ao servidor quando a ligação é restaurada.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">—</div>
+          <div class="step-body">
+            <strong>Sincronização automática</strong>
+            <p>Ao recuperar a ligação, a aplicação sincroniza automaticamente a fila após 1,5 segundos. Os IDs temporários locais são substituídos pelos IDs reais do servidor.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Painel de Sincronização</div>
+      <p>
+        Clicar no indicador de sincronização (barra superior) abre o painel com:
+      </p>
+      <ul style="margin:10px 0 10px 20px;font-size:13px;line-height:2;">
+        <li>Estado actual da ligação</li>
+        <li>Lista de operações pendentes (tabela, tipo e hora)</li>
+        <li>Botão <kbd>⟳ Sincronizar agora</kbd> (só visível se online e com pendentes)</li>
+        <li>Botão <kbd>Limpar fila</kbd> — descarta todas as operações pendentes (irreversível)</li>
+      </ul>
+      <div class="info-box warn">
+        <div class="info-box-title">Atenção — Dados por dispositivo</div>
+        A cache e a fila são locais ao browser utilizado. Operações registadas offline num dispositivo não são visíveis noutros dispositivos até sincronizarem com o servidor.
+      </div>
+      <div class="info-box danger">
+        <div class="info-box-title">Limpeza do browser</div>
+        Limpar os dados do browser (cookies, cache, armazenamento local) elimina a cache offline e a fila de operações pendentes não sincronizadas. Em modo offline, esta acção implica perda permanente dos dados não enviados.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       8. EXPORTAÇÃO DE RELATÓRIOS
+  ══════════════════════════════════════ -->
+  <div class="section" id="sec-export">
+    <div class="section-num">08 — Exportação de Relatórios</div>
+    <div class="section-title">Exportação de <span>Relatórios</span></div>
+    <p>
+      Requer perfil <span class="role-badge role-operacional">operacional</span> ou superior. Disponível na vista de detalhe de qualquer ocorrência (activa ou arquivada).
+    </p>
+
+    <div class="subsection">
+      <div class="subsection-title">Log Completo da Ocorrência</div>
+      <p>
+        O botão <kbd>⬇ Log</kbd> (barra superior da ocorrência) exporta um ficheiro de texto <code>.txt</code> com:
+      </p>
+      <ul style="margin:10px 0 10px 20px;font-size:13px;line-height:2;">
+        <li>Cabeçalho com dados da ocorrência (local, código, sub-região, concelho, início)</li>
+        <li>Sumário de meios: total por estado, total de operacionais</li>
+        <li>Lista detalhada de cada meio: dados de mobilização, desmobilização, km, missão, operacionais e log de eventos individual</li>
+        <li>Log cronológico completo da ocorrência</li>
+      </ul>
+      <p>O ficheiro é nomeado automaticamente com o local de ignição e a data de exportação.</p>
+      <div class="info-box ok">
+        <div class="info-box-title">Compatibilidade</div>
+        O ficheiro exportado é texto simples, compatível com qualquer editor de texto, e pode ser impresso ou arquivado directamente.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════ RODAPÉ ══════ -->
+  <div class="footer">
+    <div class="footer-logo">Gestão<span>Meios</span></div>
+    <div>ICNF · Gestão de Fogos Rurais · Manual do Utilizador v17</div>
+    <div>Documento editável — abrir em qualquer editor de texto ou browser</div>
+  </div>
+
+</div>
+
+<script>
+  // Smooth scroll para âncoras do índice
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
