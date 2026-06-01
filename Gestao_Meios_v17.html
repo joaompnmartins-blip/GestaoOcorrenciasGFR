@@ -1791,7 +1791,7 @@ function mapOcorrencia(r){ return { id:r.id, nome:r.local_ignicao, ref:r.codigo_
 
 function mapTeam(r){
   const eventos = (r.meios_eventos||[]).sort((a,b)=>b.ts.localeCompare(a.ts)).map(e=>({ts:e.ts,msg:e.msg}));
-  const operativos = (r.meios_operativos||[]).sort((a,b)=>a.ordem-b.ordem).map(o=>o.nome);
+  const operativos = (r.meios_operativos||[]).sort((a,b)=>a.ordem-b.ordem).map(o=>({ nome:o.nome, utilizador_id:o.utilizador_id||null }));
   return { id:r.id, ocorrencia_id:r.ocorrencia_id, eq:r.eq, tipo:r.tipo, matricula:r.matricula||'', concelho:r.concelho, setor:r.setor, operacionais:r.operacionais, operativos, responsavel:r.responsavel, contacto:r.contacto, dataDespacho:r.data_despacho, horaDespacho:r.hora_despacho, dataSaidaEntidade:r.data_saida_entidade, horaSaidaEntidade:r.hora_saida_entidade, dataChegada:r.data_chegada, horaChegada:r.hora_chegada, horasMax:r.horas_max, limiteOp:r.limite_op, limiteOpDate:r.limite_op_date, dataDemob:r.data_demob, horaDemob:r.hora_demob, dataChegadaEntidade:r.data_chegada_entidade, horaChegadaEntidade:r.hora_chegada_entidade, km:r.km, missao:r.missao, estado:r.estado, obs:r.obs, previstoData:r.previsto_data, previstoHora:r.previsto_hora, eventos, created:r.created_at };
 }
 
@@ -1831,8 +1831,8 @@ async function persistTeam(payload, editId){
 }
 
 async function persistOperativos(teamId, operativos){
-  const rows = operativos.map((nome,i)=>({ meio_id:teamId, nome, ordem:i }));
-  await supaWriteOrQueue('meios_operativos','upsert',{meio_id:teamId, rows}, teamId, `Operativos: ${operativos.join(', ').slice(0,40)}`);
+  const rows = operativos.map((op,i)=>({ meio_id:teamId, nome:op.nome||op, utilizador_id:op.utilizador_id||null, ordem:i }));
+  await supaWriteOrQueue('meios_operativos','upsert',{meio_id:teamId, rows}, teamId, `Operativos: ${operativos.map(o=>o.nome||o).join(', ').slice(0,40)}`);
 }
 
 async function persistEvento(teamId, msg){
@@ -2553,7 +2553,7 @@ function teamCardHtml(t, isClosed){
   // Operatives chips
   let opsHtml='';
   if(t.operativos&&t.operativos.filter(Boolean).length){
-    opsHtml=`<div class="operatives-list">${t.operativos.filter(Boolean).map(n=>`<span class="operative-chip">${esc(n)}</span>`).join('')}</div>`;
+    opsHtml=`<div class="operatives-list">${t.operativos.filter(Boolean).map(o=>`<span class="operative-chip">${esc(o.nome||o)}</span>`).join('')}</div>`;
   } else if(t.operacionais){
     opsHtml=`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted)">👥 ${t.operacionais} operacionais</span>`;
   }
@@ -2816,11 +2816,33 @@ function getOpsDatalist(){
   return `<datalist id="ops-datalist">${names.map(n=>`<option value="${esc(n)}">`).join('')}</datalist>`;
 }
 
-function makeOpsItem(val, idx){
+let _fieldUsers = []; // cache: tecnico + operacional com conta no sistema
+
+async function loadFieldUsers(){
+  if(_fieldUsers.length) return;
+  const { data } = await apiFetch('/api/utilizadores/tecnicos');
+  _fieldUsers = data || [];
+}
+
+function makeOpsItem(op, idx){
+  const nome = op && typeof op === 'object' ? (op.nome||'') : (op||'');
+  const uid  = op && typeof op === 'object' ? (op.utilizador_id||'') : '';
+  const userOpts = `<option value="">— Conta —</option>` +
+    _fieldUsers.map(u=>`<option value="${u.id}"${u.id===uid?' selected':''}>${esc(u.nome)}</option>`).join('');
   const div=document.createElement('div');
   div.className='ops-item';
-  div.innerHTML=`<input class="form-input" placeholder="Nome operacional ${idx+1}" value="${esc(val||'')}" list="ops-datalist"/><button class="btn btn-danger btn-xs" onclick="this.parentElement.remove();recountOps()">✕</button>`;
+  div.innerHTML=`
+    <input class="form-input" placeholder="Nome ${idx+1}" value="${esc(nome)}" list="ops-datalist" style="flex:2;min-width:0;"/>
+    <select class="form-select ops-user-sel" title="Associar a utilizador do sistema" style="flex:1;min-width:0;font-size:11px;" onchange="onOpsUserChange(this)">
+      ${userOpts}
+    </select>
+    <button class="btn btn-danger btn-xs" onclick="this.parentElement.remove();recountOps()">✕</button>`;
   return div;
+}
+
+function onOpsUserChange(sel){
+  const user = _fieldUsers.find(u=>u.id===sel.value);
+  if(user) sel.parentElement.querySelector('input').value = user.nome;
 }
 
 function togglePrevistoFields(val){
@@ -2874,6 +2896,7 @@ function openAddTeam(){
   const opsDl=document.getElementById('ops-datalist'); if(opsDl) opsDl.remove();
   document.getElementById('ops-list').innerHTML='';
   refreshPresetSelect(null);
+  loadFieldUsers();
   openModal('modal-team');
 }
 
@@ -2894,7 +2917,7 @@ function applyPreset(id){
   syncOpsFields(e.capacidade||0);
 }
 
-function editTeam(id){
+async function editTeam(id){
   const t=db.teams.find(x=>x.id===id);
   if(!t) return;
   document.getElementById('team-edit-id').value=t.id;
@@ -2934,6 +2957,7 @@ function editTeam(id){
   list.innerHTML='';
   const ops=t.operativos||[];
   const count=Math.max(parseInt(t.operacionais)||0, ops.length);
+  await loadFieldUsers();
   for(let i=0;i<count;i++){
     list.appendChild(makeOpsItem(ops[i]||'', i));
   }
@@ -2945,8 +2969,12 @@ async function saveTeam(){
   const eq=document.getElementById('team-eq').value.trim();
   if(!eq){toast('Insira a designação do meio.','err');return;}
   const editId=document.getElementById('team-edit-id').value;
-  // Collect operatives names
-  const operativos=[...document.getElementById('ops-list').querySelectorAll('.ops-item input')].map(i=>i.value.trim()).filter(Boolean);
+  // Collect operatives with optional user link
+  const operativos=[...document.getElementById('ops-list').querySelectorAll('.ops-item')].map(div=>{
+    const nome=(div.querySelector('input')?.value||'').trim();
+    const uid=div.querySelector('.ops-user-sel')?.value||null;
+    return nome?{nome, utilizador_id:uid||null}:null;
+  }).filter(Boolean);
   const payload={
     ocorrencia_id:currentOccId, eq,
     tipo:document.getElementById('team-tipo').value,
@@ -3426,7 +3454,7 @@ function exportLog(){
       if(t.dataDemob) lines.push(`  Desmob.    : ${t.dataDemob} ${t.horaDemob||''}`);
       if(t.missao) lines.push(`  Missão     : ${t.missao}`);
       const ops=(t.operativos||[]).filter(Boolean);
-      if(ops.length) lines.push(`  Operacionais: ${ops.join(', ')}`);
+      if(ops.length) lines.push(`  Operacionais: ${ops.map(o=>o.nome||o).join(', ')}`);
       else if(t.operacionais) lines.push(`  Operacionais: ${t.operacionais} elementos`);
       if(t.obs) lines.push(`  Obs.       : ${t.obs}`);
       // Event log
@@ -3887,7 +3915,7 @@ async function loadOficiaisLigacao(){
 
   // Carregar técnicos disponíveis para o selector (só se ainda não carregados)
   if(!_tecnicos.length){
-    const { data } = await apiFetch('/api/utilizadores');
+    const { data } = await apiFetch('/api/utilizadores/tecnicos');
     _tecnicos = (data||[]).filter(u => u.role === 'tecnico');
     const sel = document.getElementById('ofic-select');
     sel.innerHTML = '<option value="">— Selecionar Técnico —</option>' +

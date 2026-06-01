@@ -242,9 +242,9 @@ app.put('/api/meios/:id/operativos', requireAuth('operacional'), requireAuthForM
   const rows = req.body.rows || [];
   await pool.query('DELETE FROM meios_operativos WHERE meio_id = $1', [req.params.id]);
   if (rows.length) {
-    const vals = rows.flatMap((r, i) => [req.params.id, r.nome, i]);
-    const ph   = rows.map((_, i) => `($${i * 3 + 1},$${i * 3 + 2},$${i * 3 + 3})`).join(',');
-    await pool.query(`INSERT INTO meios_operativos (meio_id,nome,ordem) VALUES ${ph}`, vals);
+    const vals = rows.flatMap((r, i) => [req.params.id, r.nome, i, r.utilizador_id || null]);
+    const ph   = rows.map((_, i) => `($${i * 4 + 1},$${i * 4 + 2},$${i * 4 + 3},$${i * 4 + 4})`).join(',');
+    await pool.query(`INSERT INTO meios_operativos (meio_id,nome,ordem,utilizador_id) VALUES ${ph}`, vals);
   }
   res.json({ ok: true });
 }));
@@ -388,6 +388,16 @@ app.delete('/api/operacionais/:id', requireAuth('dradj_cnsr'), wrap(async (req, 
 // ══════════════════════════════════════════════════════════════════
 //  UTILIZADORES (admin only)
 // ══════════════════════════════════════════════════════════════════
+// Utilizadores de campo (tecnico + operacional) — acessível a dradj_cnsr para associar aos meios
+app.get('/api/utilizadores/tecnicos', requireAuth('dradj_cnsr'), wrap(async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT id, nome, email, role FROM utilizadores
+     WHERE role IN ('tecnico','operacional') AND ativo = true
+     ORDER BY nome`
+  );
+  res.json(rows);
+}));
+
 app.get('/api/utilizadores', requireAuth('administrador'), wrap(async (req, res) => {
   const { rows } = await pool.query(
     'SELECT id, email, nome, role, subregiao, ativo, created_at FROM utilizadores ORDER BY created_at'
