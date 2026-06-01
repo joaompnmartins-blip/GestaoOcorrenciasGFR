@@ -1294,7 +1294,7 @@ async function apiFetch(path, options = {}){
 }
 
 function showAuthOverlay(){
-  currentUser=null; currentRole=null; currentNome=''; currentOccId=null;
+  currentUser=null; currentRole=null; currentNome=''; currentOccId=null; currentOccIsOL=false;
   // Limpar caches de sessão
   _tecnicos=[]; _fieldUsers=[]; _tlData=[]; _tlFilter='all';
   // Esconder e limpar painel de Oficiais de Ligação
@@ -1729,13 +1729,7 @@ async function completeLogin(authData){
   document.getElementById('btn-logout').style.display = '';
   applyRoleUI();
   await loadAllData();
-  if(currentRole === 'operacional'){
-    const myOcc = db.ocorrencias.find(o => o.status === 'active');
-    if(myOcc) openDetalhe(myOcc.id);
-    else renderOcorrencias();
-  } else {
-    renderOcorrencias();
-  }
+  renderOcorrencias();
 }
 
 function applyRoleUI(){
@@ -1819,7 +1813,9 @@ async function loadAllData(){
 }
 
 // ── Map Supabase snake_case → app camelCase ──────────────────────
-function mapOcorrencia(r){ return { id:r.id, nome:r.local_ignicao, ref:r.codigo_ocorrencia, concelho:r.concelho, subregiao:r.subregiao||'', obs:r.obs, inicio:r.inicio, status:r.status, created:r.created_at }; }
+function mapOcorrencia(r){ return { id:r.id, nome:r.local_ignicao, ref:r.codigo_ocorrencia, concelho:r.concelho, subregiao:r.subregiao||'', obs:r.obs, inicio:r.inicio, status:r.status, created:r.created_at, isOL:r.is_oficial_ligacao||false }; }
+
+let currentOccIsOL = false; // técnico é Oficial de Ligação na ocorrência actualmente aberta
 
 function mapTeam(r){
   const eventos = (r.meios_eventos||[]).sort((a,b)=>b.ts.localeCompare(a.ts)).map(e=>({ts:e.ts,msg:e.msg}));
@@ -2023,6 +2019,7 @@ function occCardHtml(o){
         <span class="badge badge-active pulse">● ATIVA</span>
         ${o.subregiao?`<span class="badge badge-y" style="font-size:9px">${esc(o.subregiao)}</span>`:''}
         ${o.concelho?`<span class="badge badge-info">${esc(o.concelho)}</span>`:''}
+        ${o.isOL&&currentRole==='tecnico'?`<span class="badge badge-warn" style="font-size:9px">⚡ Ofic. Ligação</span>`:''}
         ${urgent?`<span class="badge badge-danger pulse">⚠ ${urgent} limite</span>`:''}
       </div>
     </div>
@@ -2295,6 +2292,8 @@ function openDetalhe(id){
   const o=db.ocorrencias.find(x=>x.id===id);
   if(!o) return;
   const isClosed = o.status==='closed';
+  // Calcular nível efectivo: técnico só tem poderes de gestor se for OL nesta ocorrência
+  currentOccIsOL = currentRole==='tecnico' && !!o.isOL;
   document.getElementById('bc-nome').textContent=o.nome+(o.ref?' — Cód. '+o.ref:'');
   document.getElementById('d-id').textContent=o.ref||o.id;
   document.getElementById('d-nome').textContent=o.nome;
@@ -2306,9 +2305,16 @@ function openDetalhe(id){
   document.getElementById('d-inicio').textContent=fmtDateTime(o.inicio);
   document.getElementById('btnCloseOcc').textContent=isClosed?'↩ Reabrir Ocorrência':'Fechar Ocorrência';
   document.getElementById('btnCloseOcc').className=isClosed?'btn btn-success btn-sm auth-gestor':'btn btn-warn btn-sm auth-gestor';
-  // Hide "Adicionar Meio" and quick actions for archived ocorrências
+  // Nível efectivo: gestor real OU técnico OL
+  const isEffGestor = ['administrador','dradj_cnsr'].includes(currentRole) || currentOccIsOL;
+  // Adicionar Meio e Fechar Ocorrência: visíveis para gestor efectivo
   const addMeioBtn=document.querySelector('.section-hdr .btn-ghost.auth-gestor[onclick="openAddTeam()"]');
-  if(addMeioBtn) addMeioBtn.style.display=isClosed?'none':'';
+  if(addMeioBtn) addMeioBtn.style.display=(!isEffGestor||isClosed)?'none':'';
+  const btnClose=document.getElementById('btnCloseOcc');
+  if(btnClose) btnClose.style.display=isEffGestor?'':'none';
+  // Fita do Tempo: oculta para técnico não-OL e operacional
+  const btnTL=document.getElementById('btnTimeline');
+  if(btnTL) btnTL.style.display=(currentRole==='tecnico'&&!currentOccIsOL)||currentRole==='operacional'?'none':'';
   // Update topbar
   document.getElementById('topbar-title').textContent=o.nome;
   document.getElementById('topbar-sub').textContent=(isClosed?'🗄 ARQUIVADA · ':'')+(o.ref?`Cód. ${o.ref} · `:'')+(o.concelho||'');
@@ -2555,8 +2561,8 @@ function renderTableView(teams, isClosed){
       <td><span class="badge ${est.cls}">${est.l}</span></td>
       <td style="font-size:10px;color:var(--muted);max-width:100px">${esc((t.obs||'').slice(0,60))}</td>
       <td><div style="display:flex;gap:4px;">
-        ${!isClosed&&['administrador','dradj_cnsr'].includes(currentRole)?`<button class="btn btn-ghost btn-xs" onclick="editTeam('${t.id}')">✎</button>`:''}
-        ${!isClosed&&['administrador','dradj_cnsr'].includes(currentRole)?`<button class="btn btn-danger btn-xs" onclick="deleteTeam('${t.id}')">✕</button>`:''}
+        ${!isClosed&&(['administrador','dradj_cnsr'].includes(currentRole)||currentOccIsOL)?`<button class="btn btn-ghost btn-xs" onclick="editTeam('${t.id}')">✎</button>`:''}
+        ${!isClosed&&(['administrador','dradj_cnsr'].includes(currentRole)||currentOccIsOL)?`<button class="btn btn-danger btn-xs" onclick="deleteTeam('${t.id}')">✕</button>`:''}
       </div></td>
     </tr>`;
   }).join('');
@@ -2597,18 +2603,21 @@ function teamCardHtml(t, isClosed){
     lastEvt=`<div class="event-log"><div class="event-item"><span class="event-time">${e.ts.slice(11,16)}</span><span class="event-text">${esc(e.msg)}</span></div></div>`;
   }
 
-  // Operacional só pode agir no meio onde está listado
-  const _inThisMeio = currentRole!=='operacional' || (t.operativos||[]).some(o=>o.utilizador_id===currentUser?.id);
+  // Nível efectivo nesta ocorrência: gestor real OU técnico OL
+  const _effGestor = ['administrador','dradj_cnsr'].includes(currentRole) || currentOccIsOL;
+  // Quem pode actuar: gestor efectivo; ou operacional/tecnico no seu próprio meio
+  const _inThisMeio = _effGestor ||
+    (['operacional','tecnico'].includes(currentRole) && (t.operativos||[]).some(o=>o.utilizador_id===currentUser?.id));
   // Action buttons — hidden for closed ocorrências
   const actionsHtml = isClosed ? '' : `<div class="team-card-actions">
-      ${_inThisMeio&&['administrador','dradj_cnsr','operacional'].includes(currentRole)&&t.estado==='previsto'?`<button class="btn btn-info btn-xs" onclick="quickAction('transit','${t.id}')" style="border-color:rgba(152,112,208,.4);color:#b890e8">▶ Activar Trânsito</button>`:''}
-      ${_inThisMeio&&['administrador','dradj_cnsr','operacional'].includes(currentRole)&&t.estado!=='operacao'&&t.estado!=='previsto'?`<button class="btn btn-success btn-xs" onclick="quickAction('op','${t.id}')">▶ Activar Op.</button>`:''}
-      ${['administrador','dradj_cnsr'].includes(currentRole)&&t.estado==='operacao'?`<button class="btn btn-warn btn-xs" onclick="quickAction('rest','${t.id}')">⏸ Descanso</button>`:''}
-      ${['administrador','dradj_cnsr'].includes(currentRole)&&t.estado!=='desmobilizado'?`<button class="btn btn-danger btn-xs" onclick="quickAction('demob','${t.id}')">✕ Desmob.</button>`:''}
-      ${['administrador','dradj_cnsr'].includes(currentRole)&&t.estado!=='previsto'?`<button class="btn btn-info btn-xs" onclick="quickAction('sector','${t.id}')">⊞ Setor</button>`:''}
-      ${_inThisMeio&&['administrador','dradj_cnsr','operacional'].includes(currentRole)?`<button class="btn btn-ghost btn-xs" onclick="quickAction('obs','${t.id}')">📝 Obs.</button>`:''}
-      ${['administrador','dradj_cnsr'].includes(currentRole)?`<button class="btn btn-ghost btn-xs" onclick="editTeam('${t.id}')">✎ Editar</button>`:''}
-      ${['administrador','dradj_cnsr'].includes(currentRole)?`<button class="btn btn-danger btn-xs" onclick="deleteTeam('${t.id}')">🗑</button>`:''}
+      ${_inThisMeio&&t.estado==='previsto'?`<button class="btn btn-info btn-xs" onclick="quickAction('transit','${t.id}')" style="border-color:rgba(152,112,208,.4);color:#b890e8">▶ Activar Trânsito</button>`:''}
+      ${_inThisMeio&&t.estado!=='operacao'&&t.estado!=='previsto'?`<button class="btn btn-success btn-xs" onclick="quickAction('op','${t.id}')">▶ Activar Op.</button>`:''}
+      ${_effGestor&&t.estado==='operacao'?`<button class="btn btn-warn btn-xs" onclick="quickAction('rest','${t.id}')">⏸ Descanso</button>`:''}
+      ${_effGestor&&t.estado!=='desmobilizado'?`<button class="btn btn-danger btn-xs" onclick="quickAction('demob','${t.id}')">✕ Desmob.</button>`:''}
+      ${_effGestor&&t.estado!=='previsto'?`<button class="btn btn-info btn-xs" onclick="quickAction('sector','${t.id}')">⊞ Setor</button>`:''}
+      ${_inThisMeio?`<button class="btn btn-ghost btn-xs" onclick="quickAction('obs','${t.id}')">📝 Obs.</button>`:''}
+      ${_effGestor?`<button class="btn btn-ghost btn-xs" onclick="editTeam('${t.id}')">✎ Editar</button>`:''}
+      ${_effGestor?`<button class="btn btn-danger btn-xs" onclick="deleteTeam('${t.id}')">🗑</button>`:''}
     </div>`;
 
   return `<div class="team-card estado-${t.estado}${urgent?' urgent':''}${isClosed?' closed-occ':''}">

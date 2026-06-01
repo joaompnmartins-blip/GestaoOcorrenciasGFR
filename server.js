@@ -136,8 +136,12 @@ app.get('/api/ocorrencias', requireAuth('tecnico'), wrap(async (req, res) => {
     q = 'SELECT * FROM ocorrencias WHERE subregiao=$1 ORDER BY created_at DESC';
     params = [subregiao];
   } else {
-    // tecnico e operacional: sub-região + OL + meios onde estão listados como operativos
-    q = `SELECT * FROM ocorrencias
+    // tecnico e operacional: sub-região + OL + meios onde estão listados
+    // inclui is_oficial_ligacao para o frontend destacar as ocorrências OL
+    q = `SELECT *,
+           EXISTS(SELECT 1 FROM ocorrencia_oficiais_ligacao
+                  WHERE ocorrencia_id = id AND utilizador_id = $2) AS is_oficial_ligacao
+         FROM ocorrencias
          WHERE subregiao=$1
             OR id IN (SELECT ocorrencia_id FROM ocorrencia_oficiais_ligacao WHERE utilizador_id=$2)
             OR id IN (
