@@ -3015,7 +3015,7 @@ async function saveTeam(){
       // Detect changes for occ log
       const changes=[];
       if(payload.operacionais!==old.operacionais||JSON.stringify(operativos)!==JSON.stringify(old.operativos)){
-        const opNames=operativos.length?operativos.join(', '):`${payload.operacionais} operacionais`;
+        const opNames=operativos.length?operativos.map(o=>o.nome||o).join(', '):`${payload.operacionais} operacionais`;
         changes.push(`Operacionais: ${opNames}`);
         await persistOccEvento(currentOccId,'ops',`${eq} — operacionais actualizados: ${opNames}`,eq);
       }
@@ -3041,7 +3041,7 @@ async function saveTeam(){
     await persistEvento(id, msg);
     db.teams.push(newT);
     // Occ-level log: meio added
-    const opNames=operativos.length?operativos.join(', '):(payload.operacionais?`${payload.operacionais} operacionais`:'');
+    const opNames=operativos.length?operativos.map(o=>o.nome||o).join(', '):(payload.operacionais?`${payload.operacionais} operacionais`:'');
     let occMsg=`Meio adicionado: ${eq}${payload.tipo?' ('+payload.tipo+')':''}${payload.setor?' · Setor '+payload.setor:''}${payload.estado?' · '+payload.estado:''}`;
     if(opNames) occMsg+=` · ${opNames}`;
     await persistOccEvento(currentOccId,'created',occMsg,eq);
@@ -3939,19 +3939,23 @@ async function loadOficiaisLigacao(){
 async function nomearOficialLigacao(){
   const uid = document.getElementById('ofic-select').value;
   if(!uid){ toast('Selecione um Técnico.','err'); return; }
+  const user = _tecnicos.find(u => u.id === uid);
   const { error } = await apiFetch(`/api/ocorrencias/${currentOccId}/oficiais_ligacao`, {
     method:'POST', body: JSON.stringify({ utilizador_id: uid })
   });
   if(error){ toast('Erro: '+error,'err'); return; }
   document.getElementById('ofic-select').value = '';
+  await persistOccEvento(currentOccId, 'occ', `Oficial de Ligação nomeado: ${user?.nome||uid}`);
   toast('Oficial de Ligação nomeado.','ok');
   await loadOficiaisLigacao();
 }
 
 async function removerOficialLigacao(uid){
   if(!confirm('Remover Oficial de Ligação?')) return;
+  const user = _tecnicos.find(u => u.id === uid);
   const { error } = await apiFetch(`/api/ocorrencias/${currentOccId}/oficiais_ligacao/${uid}`, { method:'DELETE' });
   if(error){ toast('Erro: '+error,'err'); return; }
+  await persistOccEvento(currentOccId, 'occ', `Oficial de Ligação removido: ${user?.nome||uid}`);
   toast('Nomeação removida.','ok');
   await loadOficiaisLigacao();
 }
