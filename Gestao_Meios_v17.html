@@ -671,7 +671,7 @@
             <button class="btn btn-warn btn-sm auth-gestor" id="btnCloseOcc" onclick="toggleCloseOcorrencia()">Fechar Ocorrência</button>
             <button class="btn btn-ghost btn-sm auth-op" onclick="exportLog()" title="Exportar log completo">⬇ Log</button>
             <button class="btn btn-info btn-sm" onclick="toggleOccLog()" id="btnOccLog">📋 Histórico</button>
-            <button class="btn btn-warn btn-sm" onclick="toggleTimeline()" id="btnTimeline">⏱ Timeline</button>
+            <button class="btn btn-warn btn-sm" onclick="toggleTimeline()" id="btnTimeline">⏱ Fita do Tempo</button>
           </div>
         </div>
 
@@ -694,7 +694,7 @@
         <div id="tl-panel" style="display:none;margin-bottom:24px;">
           <div class="tl-panel-wrap">
             <div class="tl-panel-hdr">
-              <div class="tl-panel-title">⏱ Linha de Tempo</div>
+              <div class="tl-panel-title">⏱ Fita do Tempo</div>
               <div style="display:flex;gap:8px;align-items:center;">
                 <button class="btn btn-ghost btn-xs auth-op" onclick="openAddTimeline()">+ Adicionar</button>
                 <button class="btn btn-ghost btn-xs" onclick="toggleTimeline()">✕</button>
@@ -1171,7 +1171,7 @@
 <div class="modal-overlay" id="modal-timeline">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('modal-timeline')">✕</button>
-    <div class="modal-title">Adicionar Entrada — Linha de Tempo</div>
+    <div class="modal-title">Adicionar Entrada — Fita do Tempo</div>
     <div class="form-grid full">
       <div class="form-field">
         <label class="form-label">Categoria</label>
@@ -2215,7 +2215,7 @@ function openDetalhe(id){
   // Reset timeline panel when switching occurrence
   _tlData = []; _tlFilter = 'all';
   document.getElementById('tl-panel').style.display = 'none';
-  document.getElementById('btnTimeline').textContent = '⏱ Timeline';
+  document.getElementById('btnTimeline').textContent = '⏱ Fita do Tempo';
   currentOccId=id;
   const o=db.ocorrencias.find(x=>x.id===id);
   if(!o) return;
@@ -3838,7 +3838,7 @@ function toggleTimeline(){
   const btn   = document.getElementById('btnTimeline');
   const visible = panel.style.display !== 'none';
   panel.style.display = visible ? 'none' : '';
-  btn.textContent = visible ? '⏱ Timeline' : '⏱ Fechar Timeline';
+  btn.textContent = visible ? '⏱ Fita do Tempo' : '⏱ Fechar Fita do Tempo';
   if(!visible) loadTimeline();
 }
 
