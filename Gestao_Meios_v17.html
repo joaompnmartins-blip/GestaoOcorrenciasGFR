@@ -3641,10 +3641,12 @@ async function _autoRefresh(){
     renderOcorrencias();
   }
 }
-// Polling de fallback — só activo quando o socket não está ligado
-setInterval(() => { if(!_socketConnected) _autoRefresh(); }, 30_000);
+// Polling de fallback — só quando socket desligado E sessão activa
+setInterval(() => {
+  if(!_socketConnected && sessionStorage.getItem('gfr_token')) _autoRefresh();
+}, 30_000);
 document.addEventListener('visibilitychange', ()=>{
-  if(document.visibilityState === 'visible') _autoRefresh();
+  if(document.visibilityState === 'visible' && sessionStorage.getItem('gfr_token')) _autoRefresh();
 });
 
 // ══════════════════════════════════════════════════════════════════

@@ -265,7 +265,7 @@ app.delete('/api/meios/:id', requireAuth('dradj_cnsr'), wrap(async (req, res) =>
 }));
 
 // Replace all operativos for a meio in one shot
-app.put('/api/meios/:id/operativos', requireAuth('operacional'), requireAuthForMeio, wrap(async (req, res) => {
+app.put('/api/meios/:id/operativos', requireAuth('tecnico'), requireAuthForMeio, wrap(async (req, res) => {
   const rows = req.body.rows || [];
   await pool.query('DELETE FROM meios_operativos WHERE meio_id = $1', [req.params.id]);
   if (rows.length) {
@@ -276,7 +276,7 @@ app.put('/api/meios/:id/operativos', requireAuth('operacional'), requireAuthForM
   res.json({ ok: true });
 }));
 
-app.post('/api/meios_eventos', requireAuth('operacional'), wrap(async (req, res) => {
+app.post('/api/meios_eventos', requireAuth('tecnico'), requireAuthForMeio, wrap(async (req, res) => {
   const b = req.body;
   await pool.query(
     'INSERT INTO meios_eventos (meio_id, ts, msg, user_id) VALUES ($1,$2,$3,$4)',
@@ -420,8 +420,8 @@ app.delete('/api/operacionais/:id', requireAuth('dradj_cnsr'), wrap(async (req, 
 // ══════════════════════════════════════════════════════════════════
 //  UTILIZADORES (admin only)
 // ══════════════════════════════════════════════════════════════════
-// Utilizadores nomeáveis como OL ou operativos — acessível a dradj_cnsr+
-app.get('/api/utilizadores/tecnicos', requireAuth('dradj_cnsr'), wrap(async (req, res) => {
+// Utilizadores nomeáveis como OL ou operativos — acessível a tecnico+ (dados limitados)
+app.get('/api/utilizadores/tecnicos', requireAuth('tecnico'), wrap(async (req, res) => {
   const { rows } = await pool.query(
     `SELECT id, nome, email, role FROM utilizadores
      WHERE role IN ('tecnico','operacional','dradj_cnsr') AND ativo = true
