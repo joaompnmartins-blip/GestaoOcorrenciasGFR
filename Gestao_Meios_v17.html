@@ -1728,7 +1728,7 @@ async function completeLogin(authData){
   rb.style.display = '';
   document.getElementById('btn-logout').style.display = '';
   applyRoleUI();
-  if(currentRole === 'operacional'){
+  if(currentRole === 'operacional' || currentRole === 'tecnico'){
     window.location.replace('/operativo');
     return;
   }

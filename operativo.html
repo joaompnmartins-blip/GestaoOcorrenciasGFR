@@ -86,6 +86,8 @@
     #toast.err { border-color: rgba(224,80,80,.4);   color: var(--danger); }
     .loading { text-align: center; padding: 50px 16px; color: var(--muted); font-size: 14px; }
     .mine-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+    .ol-banner { margin: 10px 12px 0; padding: 12px 14px; background: rgba(200,154,42,.08); border: 1px solid rgba(200,154,42,.3); border-radius: 4px; font-size: 12px; color: var(--warn); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .ol-banner a { color: var(--warn); font-weight: 700; text-decoration: underline; white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -176,6 +178,15 @@ function isMine(m){
 }
 
 // ── Render ───────────────────────────────────────────────────────
+function olBanner(){
+  const hasOL = _ocorrencias.some(o => o.is_oficial_ligacao);
+  if(!hasOL) return '';
+  return `<div class="ol-banner">
+    <span>⚡ Tem ocorrências como Oficial de Ligação</span>
+    <a href="/">Abrir app completa</a>
+  </div>`;
+}
+
 function renderApp(){
   if(!_ocorrencias.length){
     document.getElementById('app').innerHTML =
@@ -193,6 +204,7 @@ function renderApp(){
 function renderOccList(){
   _currentOccId = null;
   document.getElementById('app').innerHTML =
+    olBanner() +
     '<div class="occ-list">' +
     _ocorrencias.map(o => `
       <div class="occ-item" onclick="selectOcc('${o.id}')">
@@ -213,7 +225,7 @@ function renderDetalhe(){
   const other = occMeios.filter(m => !isMine(m));
   const sorted = [...mine, ...other];
 
-  let html = `<div class="occ-header">
+  let html = olBanner() + `<div class="occ-header">
     ${_ocorrencias.length > 1 ? `<span class="occ-back" onclick="renderOccList()">← Ocorrências</span>` : ''}
     <div class="occ-name">${esc(o.local_ignicao||'—')}</div>
     <div class="occ-meta">${o.codigo_ocorrencia?esc(o.codigo_ocorrencia)+' · ':''}${esc(o.concelho||'')} · ${occMeios.length} meio${occMeios.length!==1?'s':''}</div>
