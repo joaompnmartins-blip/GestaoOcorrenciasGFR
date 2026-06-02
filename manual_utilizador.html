@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Manual do Utilizador — Gestão Meios ICNF/GFR</title>
+  <title>Manual do Utilizador — Gestão Ocorrências ICNF/GFR</title>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Barlow+Condensed:wght@400;500;600;700;800&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet"/>
   <style>
     :root {
@@ -334,10 +334,16 @@
       white-space: nowrap;
       display: inline-block;
     }
-    .role-admin       { background:rgba(66,154,189,.14);  color:var(--icnf-blue-light); border:1px solid rgba(66,154,189,.35); }
-    .role-gestor      { background:rgba(140,150,28,.12);  color:var(--accent);           border:1px solid rgba(140,150,28,.3); }
+    .role-administrador{ background:rgba(66,154,189,.14);  color:var(--icnf-blue-light); border:1px solid rgba(66,154,189,.35); }
+    .role-dradj_cnsr  { background:rgba(140,150,28,.12);  color:var(--accent);           border:1px solid rgba(140,150,28,.3); }
     .role-operacional { background:rgba(90,184,214,.10);  color:var(--accent3);          border:1px solid rgba(90,184,214,.25); }
-    .role-visualizador{ background:rgba(89,99,0,.15);     color:var(--muted);            border:1px solid var(--border); }
+    .role-tecnico     { background:rgba(89,99,0,.15);     color:var(--muted);            border:1px solid var(--border); }
+    .role-ol          { background:rgba(200,154,42,.12);  color:var(--warn);             border:1px solid rgba(200,154,42,.3); }
+    /* ── INSTALL STEPS (PWA) ── */
+    .install-step { display:flex; gap:14px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--border); }
+    .install-step:last-child { border-bottom:none; }
+    .install-os { font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; min-width:60px; padding-top:2px; color:var(--accent); }
+    .tl-cat-chip { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:11px; font-family:'IBM Plex Mono',monospace; margin:3px 3px 3px 0; border:1px solid var(--border); background:var(--surface); color:var(--muted); }
 
     /* ── STATE BADGES ── */
     .badge {
@@ -504,12 +510,12 @@
   <!-- ══════ CAPA ══════ -->
   <div class="cover">
     <div class="cover-tag">ICNF · Gestão de Fogos Rurais · Documentação</div>
-    <div class="cover-title">Gestão<br><span>Meios</span></div>
+    <div class="cover-title">Gestão<br><span>Ocorrências</span></div>
     <div class="cover-sub">Manual do Utilizador</div>
     <div class="cover-bar"></div>
     <div class="cover-meta">
-      <strong>Versão</strong> 17 &nbsp;·&nbsp;
-      <strong>Audiência</strong> Operacionais, Gestores e Administradores &nbsp;·&nbsp;
+      <strong>Versão</strong> 2026 &nbsp;·&nbsp;
+      <strong>Audiência</strong> Administrador, DRAdj+CNSR, Técnico, Operacional &nbsp;·&nbsp;
       <strong>Sistema</strong> GFR / ICNF<br>
       <strong>Idioma</strong> Português (Portugal)
     </div>
@@ -524,6 +530,8 @@
         <a class="toc-item" href="#sec-login"><span class="toc-num">1.1</span><span class="toc-label">Autenticação</span></a>
         <a class="toc-item" href="#sec-roles"><span class="toc-num">1.2</span><span class="toc-label">Perfis e Permissões</span></a>
         <a class="toc-item" href="#sec-interface"><span class="toc-num">1.3</span><span class="toc-label">Interface Geral</span></a>
+        <a class="toc-item" href="#sec-ol"><span class="toc-num">1.4</span><span class="toc-label">Oficial de Ligação</span></a>
+        <a class="toc-item" href="#sec-pwa-intro"><span class="toc-num">1.5</span><span class="toc-label">App Móvel (PWA)</span></a>
       </li>
       <li><a class="toc-item" href="#sec-ocorrencias"><span class="toc-num">02</span><span class="toc-label">Ocorrências</span></a></li>
       <li class="toc-sub">
@@ -544,6 +552,8 @@
       <li><a class="toc-item" href="#sec-utilizadores"><span class="toc-num">06</span><span class="toc-label">Gestão de Utilizadores</span></a></li>
       <li><a class="toc-item" href="#sec-offline"><span class="toc-num">07</span><span class="toc-label">Modo Offline e Sincronização</span></a></li>
       <li><a class="toc-item" href="#sec-export"><span class="toc-num">08</span><span class="toc-label">Exportação de Relatórios</span></a></li>
+      <li><a class="toc-item" href="#sec-fita"><span class="toc-num">09</span><span class="toc-label">Fita do Tempo</span></a></li>
+      <li><a class="toc-item" href="#sec-app"><span class="toc-num">10</span><span class="toc-label">Instalar a App Móvel</span></a></li>
     </ul>
   </div>
 
@@ -595,41 +605,45 @@
 
     <div class="subsection" id="sec-roles">
       <div class="subsection-title">1.2 — Perfis e Permissões</div>
-      <p>Existem quatro perfis de utilizador, com acumulação de permissões da esquerda para a direita:</p>
+      <p>Existem quatro perfis de utilizador. As permissões são hierárquicas mas também <strong>contextuais</strong> — um Técnico pode ter poderes de DRAdj+CNSR numa ocorrência específica se for nomeado Oficial de Ligação (ver secção 1.4).</p>
       <table class="role-table">
         <thead>
           <tr>
             <th>Perfil</th>
-            <th>O que pode fazer</th>
-            <th>Restrições</th>
+            <th>Visibilidade</th>
+            <th>Acções permitidas</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><span class="role-badge role-visualizador">visualizador</span></td>
-            <td>Consultar ocorrências, meios, arquivo e log de eventos.</td>
-            <td>Não pode criar, editar nem fechar ocorrências ou meios.</td>
+            <td><span class="role-badge role-tecnico">técnico</span></td>
+            <td>Ocorrências da sua sub-região (leitura). Acede via app móvel ou web.</td>
+            <td>Leitura de todas as ocorrências e meios. Se incluído num meio: Activar Op. e Obs. nesse meio. Se nomeado OL: poderes de DRAdj+CNSR na ocorrência.</td>
           </tr>
           <tr>
             <td><span class="role-badge role-operacional">operacional</span></td>
-            <td>Tudo o do Visualizador, mais: alterar estado dos meios (Activar Op., Descanso, Desmobilizar), atribuir sector, adicionar observações e eventos de meio.</td>
-            <td>Não pode criar/editar/eliminar ocorrências ou meios, nem gerir utilizadores.</td>
+            <td>Ocorrências onde está incluído num meio. Acede exclusivamente via <strong>app móvel</strong> (/operativo).</td>
+            <td>Activar Op., Activar Trânsito e Obs. — apenas no meio onde está listado como operativo.</td>
           </tr>
           <tr>
-            <td><span class="role-badge role-gestor">gestor</span></td>
-            <td>Tudo o do Operacional, mais: criar e fechar ocorrências, adicionar/editar/eliminar meios, gerir o catálogo de meios predefinidos. Restrito à sua sub-região se tiver uma atribuída.</td>
-            <td>Não pode eliminar ocorrências nem gerir utilizadores.</td>
+            <td><span class="role-badge role-dradj_cnsr">DRAdj+CNSR</span></td>
+            <td>Ocorrências da sua sub-região. Se nomeado OL por Admin noutras sub-regiões, vê também essas.</td>
+            <td>Criar e fechar ocorrências, gerir meios (todos os estados e acções), nomear Oficiais de Ligação, gerir catálogo. Não pode eliminar ocorrências nem gerir utilizadores.</td>
           </tr>
           <tr>
-            <td><span class="role-badge role-admin">admin</span></td>
-            <td>Acesso total: tudo o do Gestor, mais: eliminar ocorrências, criar e gerir utilizadores, ver todas as sub-regiões.</td>
-            <td>—</td>
+            <td><span class="role-badge role-administrador">administrador</span></td>
+            <td>Todas as ocorrências de todas as sub-regiões.</td>
+            <td>Acesso total: tudo o de DRAdj+CNSR, mais: eliminar ocorrências, criar e gerir utilizadores, nomear OL em qualquer ocorrência.</td>
           </tr>
         </tbody>
       </table>
       <div class="info-box">
-        <div class="info-box-title">Sub-região (Gestor)</div>
-        Um Gestor com sub-região atribuída vê e gere apenas as ocorrências da sua sub-região. O Administrador vê tudo e pode filtrar por sub-região.
+        <div class="info-box-title">Visibilidade por sub-região</div>
+        DRAdj+CNSR e Técnico com sub-região atribuída vêem apenas as ocorrências dessa sub-região. O Administrador vê tudo e pode filtrar. Operacional sem sub-região vê só as ocorrências onde está incluído num meio.
+      </div>
+      <div class="info-box warn">
+        <div class="info-box-title">Interface por perfil</div>
+        <strong>Operacional e Técnico</strong> são redirecionados automaticamente para a app móvel simplificada (<code>/operativo</code>) ao fazer login. Os perfis DRAdj+CNSR e Administrador acedem à aplicação de gestão completa.
       </div>
     </div>
 
@@ -659,6 +673,69 @@
       <div class="info-box" style="margin-top:16px;">
         <div class="info-box-title">Tema</div>
         O botão <kbd>☀</kbd> na barra superior alterna entre tema escuro (predefinido) e tema claro.
+      </div>
+    </div>
+    <div class="subsection" id="sec-ol">
+      <div class="subsection-title">1.4 — Oficial de Ligação</div>
+      <p>
+        O <strong>Oficial de Ligação (OL)</strong> é um mecanismo que eleva temporariamente as permissões de um <span class="role-badge role-tecnico">técnico</span> ou <span class="role-badge role-dradj_cnsr">DRAdj+CNSR</span> ao nível de gestor numa ocorrência específica, sem alterar o perfil global do utilizador.
+      </p>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Quem pode nomear</div>
+          <p style="font-size:13px;"><span class="role-badge role-dradj_cnsr">DRAdj+CNSR</span> pode nomear OL nas ocorrências da sua sub-região (incluindo auto-nomeação).<br><br><span class="role-badge role-administrador">Administrador</span> pode nomear OL em qualquer ocorrência, incluindo noutras sub-regiões.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">O que o OL pode fazer</div>
+          <p style="font-size:13px;">Na ocorrência para a qual foi nomeado, o OL tem as mesmas permissões do DRAdj+CNSR: gerir meios (todos os estados), adicionar entradas na Fita do Tempo, fechar/reabrir a ocorrência.</p>
+        </div>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <strong>Abrir a ocorrência</strong>
+            <p>Na página de detalhe da ocorrência, o painel <kbd>⚡ Oficiais de Ligação</kbd> aparece no topo (visível apenas para DRAdj+CNSR e Administrador).</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <strong>Seleccionar o utilizador</strong>
+            <p>No selector junto ao painel, escolher o Técnico ou DRAdj+CNSR a nomear e clicar <kbd>+ Nomear</kbd>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <strong>Confirmar</strong>
+            <p>A nomeação fica registada e gera automaticamente uma entrada na Fita do Tempo (categoria <strong>Ocorrência</strong>). O utilizador nomeado passa a ver a ocorrência marcada com o badge <kbd>⚡ Ofic. Ligação</kbd>.</p>
+          </div>
+        </div>
+      </div>
+      <div class="info-box ok">
+        <div class="info-box-title">Remoção</div>
+        Para remover a nomeação, clicar no <kbd>✕</kbd> junto ao nome do OL no painel. A remoção também fica registada na Fita do Tempo.
+      </div>
+    </div>
+
+    <div class="subsection" id="sec-pwa-intro">
+      <div class="subsection-title">1.5 — App Móvel (PWA)</div>
+      <p>
+        A aplicação disponibiliza uma <strong>versão móvel simplificada</strong> (<code>/operativo</code>) destinada a operacionais e técnicos no terreno. É uma PWA (Progressive Web App) — instala-se directamente a partir do browser sem passar por loja de aplicações.
+      </p>
+      <p>
+        O <span class="role-badge role-operacional">operacional</span> e o <span class="role-badge role-tecnico">técnico</span> são redireccionados automaticamente para esta vista ao fazer login. Para instruções de instalação ver <a href="#sec-app" style="color:var(--accent2)">secção 10</a>.
+      </p>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">App Móvel (/operativo)</div>
+          <p style="font-size:13px;">Vista ultra-simplificada: mostra as ocorrências atribuídas, os meios (o próprio em destaque), e permite Activar Op. e adicionar Obs. no próprio meio. Sem navegação de gestão.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">App Completa (/)</div>
+          <p style="font-size:13px;">Para DRAdj+CNSR, Administrador e Técnicos OL. Gestão completa de ocorrências, meios, Fita do Tempo, catálogo e utilizadores.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -1087,10 +1164,185 @@
   </div>
 
 
+  <!-- ══════════════════════════════════════
+       9. FITA DO TEMPO
+  ══════════════════════════════════════ -->
+  <div class="section" id="sec-fita">
+    <div class="section-num">09 — Fita do Tempo</div>
+    <div class="section-title">Fita do <span>Tempo</span></div>
+    <p>
+      A <strong>Fita do Tempo</strong> é o registo cronológico completo de uma ocorrência. Agrega automaticamente os eventos de meios e da ocorrência, e permite adicionar entradas manuais por categoria. Acedida através do botão <kbd>⏱ Fita do Tempo</kbd> na página de detalhe da ocorrência.
+    </p>
+    <div class="info-box warn">
+      <div class="info-box-title">Disponibilidade</div>
+      A Fita do Tempo está disponível para <span class="role-badge role-dradj_cnsr">DRAdj+CNSR</span>, <span class="role-badge role-administrador">Administrador</span> e <span class="role-badge role-ol">Técnico OL</span>. Está <strong>oculta</strong> para Operacional e Técnico sem nomeação OL.
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Categorias</div>
+      <p>As entradas são organizadas por categoria. As categorias <strong>automáticas</strong> são preenchidas pelo sistema; as restantes são adicionadas manualmente.</p>
+      <div style="margin:14px 0;">
+        <div style="margin-bottom:8px;font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;">Automáticas</div>
+        <span class="tl-cat-chip" style="background:rgba(66,154,189,.12);color:var(--accent3);border-color:rgba(66,154,189,.3);">🔄 Ocorrência</span>
+        <span class="tl-cat-chip" style="background:rgba(109,184,109,.10);color:var(--success);border-color:rgba(109,184,109,.3);">🚒 Meios ICNF</span>
+        <div style="margin-top:14px;margin-bottom:8px;font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;">Manuais (entrada de texto livre)</div>
+        <span class="tl-cat-chip">🤝 Meios Outros</span>
+        <span class="tl-cat-chip">🌬️ Meteorologia</span>
+        <span class="tl-cat-chip">📡 Comunicações</span>
+        <span class="tl-cat-chip">🏛️ Atividade ICNF</span>
+        <span class="tl-cat-chip">👥 Atividade Outros</span>
+        <span class="tl-cat-chip">📝 Outros</span>
+      </div>
+      <div class="info-box">
+        <div class="info-box-title">Missões — Meios ICNF</div>
+        As entradas de <strong>Meios ICNF</strong> mostram a missão atribuída ao meio com indicação do estado: <kbd>◌ Em missão</kbd> (amarelo) quando activo, <kbd>✓ Missão concluída</kbd> (verde) quando desmobilizado.
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Adicionar entrada manual</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <strong>Abrir o formulário</strong>
+            <p>Clicar em <kbd>+ Adicionar</kbd> no cabeçalho do painel da Fita do Tempo.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <strong>Seleccionar categoria</strong>
+            <p>Escolher a categoria no selector — apenas as categorias manuais estão disponíveis.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <strong>Preencher e guardar</strong>
+            <p>Escrever o texto da entrada e clicar <kbd>Guardar</kbd>. A entrada fica registada com a hora actual e o nome do utilizador.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Filtros e Exportação</div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Filtros</div>
+          <p style="font-size:13px;"><strong>Por categoria:</strong> clicar nos chips de filtro no topo do painel para ver apenas uma categoria.<br><br><strong>Por período:</strong> preencher os campos <kbd>De</kbd> / <kbd>Até</kbd> (data e hora) para restringir o intervalo temporal. O botão <kbd>✕ Limpar</kbd> remove o filtro.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Exportação</div>
+          <p style="font-size:13px;">O botão <kbd>⬇ Exportar</kbd> gera um ficheiro <code>.txt</code> com todas as entradas actualmente visíveis (filtros aplicados). O cabeçalho inclui os dados da ocorrência, filtros usados e data de exportação.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       10. INSTALAR A APP MÓVEL
+  ══════════════════════════════════════ -->
+  <div class="section" id="sec-app">
+    <div class="section-num">10 — Instalar a App Móvel</div>
+    <div class="section-title">Instalar a <span>App Móvel</span></div>
+    <p>
+      A aplicação é uma <strong>PWA (Progressive Web App)</strong> — pode ser instalada no ecrã inicial do telemóvel como se fosse uma app nativa, sem passar pela App Store ou Google Play. Após instalada, abre em ecrã completo sem barra do browser e funciona offline.
+    </p>
+    <div class="info-box ok">
+      <div class="info-box-title">Para quem</div>
+      A instalação é especialmente útil para <span class="role-badge role-operacional">operacional</span> e <span class="role-badge role-tecnico">técnico</span> no terreno, que acedem à vista simplificada <code>/operativo</code> — atalho directo para a ocorrência e meio atribuídos.
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Android — Chrome</div>
+      <div class="steps">
+        <div class="step">
+          <div class="install-os">Android</div>
+          <div class="step-body">
+            <strong>Passo 1 — Abrir a aplicação no Chrome</strong>
+            <p>Navegar até ao URL da aplicação. Se o Chrome detectar que a app pode ser instalada, aparece automaticamente um banner <kbd>Adicionar ao ecrã inicial</kbd> na parte inferior do ecrã.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="install-os">Android</div>
+          <div class="step-body">
+            <strong>Passo 2 — Instalar manualmente (se o banner não aparecer)</strong>
+            <p>Tocar no menu <kbd>⋮</kbd> (três pontos) no canto superior direito do Chrome → <kbd>Adicionar ao ecrã inicial</kbd> → confirmar com <kbd>Adicionar</kbd>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="install-os">Android</div>
+          <div class="step-body">
+            <strong>Passo 3 — Abrir a app</strong>
+            <p>Aparece um ícone <strong>GestãoOcc</strong> no ecrã inicial. Tocar para abrir — a app abre em ecrã completo sem barra do browser.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">iOS — Safari</div>
+      <div class="steps">
+        <div class="step">
+          <div class="install-os">iOS</div>
+          <div class="step-body">
+            <strong>Passo 1 — Abrir a aplicação no Safari</strong>
+            <p>A instalação de PWA no iPhone e iPad <strong>requer o Safari</strong>. Navegar até ao URL da aplicação no Safari (não Chrome nem Firefox).</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="install-os">iOS</div>
+          <div class="step-body">
+            <strong>Passo 2 — Botão de Partilhar</strong>
+            <p>Tocar no ícone de <kbd>Partilhar</kbd> (quadrado com seta para cima) na barra inferior do Safari.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="install-os">iOS</div>
+          <div class="step-body">
+            <strong>Passo 3 — Adicionar ao Ecrã de Início</strong>
+            <p>Na folha de partilha, fazer scroll até encontrar <kbd>Adicionar ao Ecrã de Início</kbd> e tocar. Confirmar o nome e tocar em <kbd>Adicionar</kbd>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="install-os">iOS</div>
+          <div class="step-body">
+            <strong>Passo 4 — Abrir a app</strong>
+            <p>O ícone aparece no ecrã inicial do iPhone/iPad. Ao abrir, a app comporta-se como uma app nativa — sem barra do Safari.</p>
+          </div>
+        </div>
+      </div>
+      <div class="info-box warn">
+        <div class="info-box-title">iOS — Notificações</div>
+        No iOS, as notificações push das PWA têm suporte limitado (disponível a partir do iOS 16.4 com Safari). Para receber alertas, manter a app aberta em segundo plano.
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Modo offline na app instalada</div>
+      <p>
+        Após a primeira abertura com ligação à internet, a app fica guardada em cache. Se a ligação cair, a app continua a funcionar:
+      </p>
+      <ul style="margin:10px 0 10px 20px;font-size:13px;line-height:2.2;">
+        <li>Os dados da última sincronização ficam disponíveis para consulta</li>
+        <li>As acções realizadas (Activar Op., Obs.) ficam em fila e enviam automaticamente quando a ligação for restaurada</li>
+        <li>O indicador de estado muda para <span class="sync-state sync-offline" style="display:inline-flex;gap:6px;font-size:10px;padding:2px 8px;">📵 OFFLINE</span></li>
+      </ul>
+      <div class="info-box ok">
+        <div class="info-box-title">Actualização automática</div>
+        Quando existe uma nova versão da aplicação, esta é descarregada automaticamente em segundo plano. Na próxima abertura, a versão mais recente já está activa — sem necessidade de desinstalar e reinstalar.
+      </div>
+    </div>
+  </div>
+
+
   <!-- ══════ RODAPÉ ══════ -->
   <div class="footer">
-    <div class="footer-logo">Gestão<span>Meios</span></div>
-    <div>ICNF · Gestão de Fogos Rurais · Manual do Utilizador v17</div>
+    <div class="footer-logo">Gestão<span>Ocorrências</span></div>
+    <div>ICNF · Gestão de Fogos Rurais · Manual do Utilizador 2026</div>
     <div>Documento editável — abrir em qualquer editor de texto ou browser</div>
   </div>
 
