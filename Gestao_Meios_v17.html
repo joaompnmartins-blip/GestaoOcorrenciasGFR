@@ -1337,6 +1337,7 @@ async function apiFetch(path, options = {}){
 
 function showAuthOverlay(){
   currentUser=null; currentRole=null; currentNome=''; currentOccId=null; currentOccIsOL=false;
+  isOnline = true; // Repor para o próximo utilizador não herdar estado falso
   destroySocket();
   // Limpar caches de sessão
   _tecnicos=[]; _fieldUsers=[]; _tlData=[]; _tlFilter='all';
@@ -1761,6 +1762,8 @@ async function doLogout(){
 }
 
 async function completeLogin(authData){
+  isOnline = true; // Login bem-sucedido = rede disponível
+  updateSyncBadge();
   currentUser      = { id: authData.id };
   currentRole      = authData.role;
   currentNome      = authData.nome;
