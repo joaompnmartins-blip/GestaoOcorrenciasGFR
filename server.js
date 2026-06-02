@@ -64,6 +64,16 @@ async function requireAuthForOccurrence(req, res, next) {
       );
       if (rows.length) return next();
     }
+    // Operacional incluído num meio desta ocorrência
+    if (role === 'operacional') {
+      const { rows } = await pool.query(
+        `SELECT 1 FROM meios m
+         JOIN meios_operativos mo ON mo.meio_id = m.id
+         WHERE m.ocorrencia_id=$1 AND mo.utilizador_id=$2`,
+        [occId, userId]
+      );
+      if (rows.length) return next();
+    }
     return res.status(403).json({ error: 'Sem permissão para esta ocorrência.' });
   } catch(e) { res.status(500).json({ error: e.message }); }
 }
@@ -71,7 +81,8 @@ async function requireAuthForOccurrence(req, res, next) {
 // Verifica se o utilizador pode actuar sobre um meio específico
 async function requireAuthForMeio(req, res, next) {
   try {
-    const meioId = req.params.id;
+    // meio_id pode vir em params (PATCH/PUT) ou no body (POST meios_eventos)
+    const meioId = req.params.id || req.body?.meio_id;
     const { id: userId, role } = req.user;
     if (['administrador', 'dradj_cnsr'].includes(role)) return next();
     if (role === 'tecnico') {
