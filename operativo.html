@@ -83,7 +83,7 @@
     .overlay.open { display: flex; }
     .obs-box { background: var(--surface); border-top: 1px solid var(--border); border-radius: 8px 8px 0 0; width: 100%; max-width: 540px; padding: 20px 20px 32px; }
     .obs-title { font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; color: var(--accent); }
-    .obs-textarea { width: 100%; background: #060c07; border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 16px; padding: 12px; resize: none; min-height: 110px; line-height: 1.5; }
+    .obs-textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 16px; padding: 12px; resize: none; min-height: 110px; line-height: 1.5; }
     .obs-textarea:focus { outline: none; border-color: var(--accent); }
     .obs-btns { display: flex; gap: 10px; margin-top: 14px; }
     .btn-cancel { flex: 1; padding: 15px; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 4px; font-size: 14px; font-weight: 700; cursor: pointer; }
@@ -109,7 +109,7 @@
     .cmsg.mine .cmsg-who { color:var(--accent); }
     .cmsg-time { font-size:10px; color:var(--muted); margin-right:6px; }
     .chat-input-row { display:flex; gap:8px; padding:10px 14px; border-top:1px solid var(--border); }
-    .chat-input-row input { flex:1; background:#060c07; border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:15px; padding:12px; }
+    .chat-input-row input { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:15px; padding:12px; }
     .chat-input-row input:focus { outline:none; border-color:var(--blue); }
     .btn-send { padding:12px 18px; background:var(--blue); color:#fff; border:none; border-radius:4px; font-size:14px; font-weight:700; cursor:pointer; }
     .mine-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
@@ -310,8 +310,8 @@ function renderDetalhe(){
     </div>
   </div>`;
   document.getElementById('app').innerHTML = html;
-  // Entrar na sala de chat
-  if(_socket?.connected) _socket.emit('join_room', _currentOccId);
+  // Pedir histórico de chat (socket.io faz buffering se ainda não estiver ligado)
+  if(_socket) _socket.emit('join_room', _currentOccId);
 }
 
 // ── Actions ──────────────────────────────────────────────────────
