@@ -1834,7 +1834,9 @@ function applyRoleUI(){
 //  LOAD ALL DATA FROM API
 // ══════════════════════════════════════════════════════════════════
 async function loadAllData(){
-  if(!isOnline){
+  // Só usar IDB quando o browser confirma offline (navigator.onLine)
+  // O nosso flag isOnline pode estar preso em false por erros anteriores
+  if(!navigator.onLine){
     const ok = await restoreFromIDB();
     if(!ok) toast('Sem ligação e sem cache local. Ligue-se à internet para carregar dados.','err');
     else toast('Modo offline — dados carregados do cache local.','info');
@@ -3645,7 +3647,9 @@ updateClock();
 // ── Auto-refresh: re-fetch do servidor e re-render ───────────────
 // Corre a cada 30 s e também quando o utilizador volta ao tab/app
 async function _autoRefresh(){
-  if(!isOnline || isSyncing) return;
+  if(isSyncing) return;
+  // Usar navigator.onLine como árbitro real — o nosso flag pode ficar preso em false
+  if(!navigator.onLine) return;
   await loadAllData();
   await cacheToIDB();
   if(document.getElementById('page-detalhe').classList.contains('active')){
