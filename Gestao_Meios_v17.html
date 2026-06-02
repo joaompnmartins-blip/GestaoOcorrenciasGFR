@@ -1315,6 +1315,8 @@ async function apiFetch(path, options = {}){
   if(token) headers['Authorization'] = 'Bearer ' + token;
   try {
     const res = await fetch(path, { ...options, headers: { ...headers, ...(options.headers||{}) } });
+    // Qualquer resposta HTTP = rede está disponível
+    if(!isOnline){ isOnline = true; updateSyncBadge(); scheduleSyncRetry(); }
     const body = await res.json();
     if(!res.ok){
       if(res.status === 401){ sessionStorage.removeItem('gfr_token'); showAuthOverlay(); }
@@ -1322,6 +1324,8 @@ async function apiFetch(path, options = {}){
     }
     return { data: body, error: null };
   } catch(e){
+    // Só aqui é genuinamente offline (fetch lança quando não há conectividade)
+    if(navigator.onLine === false){ isOnline = false; updateSyncBadge(); }
     return { data: null, error: { message: e.message } };
   }
 }
@@ -1686,7 +1690,7 @@ async function supaWriteOrQueue(table, op, payload, tempId, desc){
       }
     } catch(e){
       console.warn(`supaWriteOrQueue: online write failed (${table}/${op}), queuing:`, e.message);
-      isOnline=false; updateSyncBadge();
+      // Não marcar como offline — pode ser erro de servidor (403, 500) com rede disponível
     }
   }
   await pushToQueue({ table, op, payload, tempId: tempId||null, desc: desc||table });
