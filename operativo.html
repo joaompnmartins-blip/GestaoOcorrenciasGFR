@@ -381,6 +381,10 @@ function initSocket(){
     if(_currentOccId) _socket.emit('join_room', _currentOccId);
   });
   _socket.on('disconnect', () => { _socketConnected = false; });
+  _socket.on('connect_error', err => {
+    _socketConnected = false;
+    console.warn('Chat connect error:', err.message);
+  });
   _socket.on('data_changed', async () => {
     try { await loadData(); if(_currentOccId) renderDetalhe(); } catch(e){}
   });
@@ -413,10 +417,11 @@ function chatMsgHtml(m){
 function sendChatMsg(){
   const inp = document.getElementById('chat-inp');
   const txt = inp?.value.trim();
-  if(!txt || !_currentOccId) return;
-  if(!_socket?.connected){ toast('Sem ligação ao chat.','err'); return; }
+  if(!txt || !_currentOccId || !_socket) return;
+  // socket.io faz buffering se não estiver ligado — envia quando conectar
   _socket.emit('send_message', { occId: _currentOccId, texto: txt });
   inp.value = '';
+  if(!_socket.connected) toast('A enviar assim que ligar…', 'info');
 }
 
 // Auto-refresh 30s (fallback quando socket não está ligado)

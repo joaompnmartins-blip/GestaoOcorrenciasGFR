@@ -4132,10 +4132,10 @@ function toggleChat(){
 function sendChatMsg(){
   const input = document.getElementById('chat-input');
   const texto = input?.value.trim();
-  if(!texto || !currentOccId) return;
-  if(!_socket?.connected){ toast('Sem ligação ao servidor de chat.','err'); return; }
+  if(!texto || !currentOccId || !_socket) return;
   _socket.emit('send_message', { occId: currentOccId, texto });
   input.value = '';
+  if(!_socket.connected) toast('A enviar assim que ligar…','info');
 }
 
 // ── Service Worker (PWA) ─────────────────────────────────────────
