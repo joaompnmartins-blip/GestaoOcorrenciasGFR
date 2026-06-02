@@ -518,6 +518,17 @@ app.get('/api/ocorrencias/:id/mensagens', requireAuth('tecnico'), wrap(async (re
   res.json(rows);
 }));
 
+app.post('/api/ocorrencias/:id/mensagens', requireAuth('tecnico'), requireAuthForOccurrence, wrap(async (req, res) => {
+  const { texto } = req.body;
+  if (!texto?.trim()) return res.status(400).json({ error: 'Texto obrigatório.' });
+  const { rows } = await pool.query(
+    'INSERT INTO mensagens (ocorrencia_id, user_id, user_nome, texto) VALUES ($1,$2,$3,$4) RETURNING *',
+    [req.params.id, req.user.id, req.user.nome, texto.trim()]
+  );
+  if (_io) _io.to(req.params.id).emit('message', rows[0]);
+  res.json(rows[0]);
+}));
+
 // ─── Proxy fogos.pt (browser directo é bloqueado por Cloudflare) ─
 app.get('/api/fogos/active', requireAuth('tecnico'), wrap(async (req, res) => {
   const r = await fetch('https://api.fogos.pt/v2/incidents/active', {

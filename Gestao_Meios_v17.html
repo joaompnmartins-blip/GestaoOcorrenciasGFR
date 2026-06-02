@@ -4086,24 +4086,10 @@ function initSocket(){
     }
   });
 
-  // Chat: histórico ao entrar na sala
-  _socket.on('chat_history', msgs => {
-    const el = document.getElementById('chat-messages');
-    if(!el) return;
-    if(!msgs.length){ el.innerHTML='<div class="chat-empty">— Sem mensagens —</div>'; return; }
-    el.innerHTML = msgs.map(m => chatMsgHtml(m)).join('');
-    el.scrollTop = el.scrollHeight;
-  });
-
-  // Chat: nova mensagem
-  _socket.on('message', msg => {
-    const el = document.getElementById('chat-messages');
-    if(!el) return;
-    const isEmpty = el.querySelector('.chat-empty');
-    if(isEmpty) el.innerHTML = '';
-    el.insertAdjacentHTML('beforeend', chatMsgHtml(msg));
-    el.scrollTop = el.scrollHeight;
-  });
+  // Chat: histórico ao entrar na sala (socket)
+  _socket.on('chat_history', msgs => renderChatHistory(msgs));
+  // Chat: nova mensagem (socket)
+  _socket.on('message', msg => appendChatMessage(msg));
 }
 
 function destroySocket(){
@@ -4120,22 +4106,59 @@ function chatMsgHtml(m){
   </div>`;
 }
 
+function renderChatHistory(msgs){
+  const el = document.getElementById('chat-messages');
+  if(!el) return;
+  if(!msgs.length){ el.innerHTML='<div class="chat-empty">— Sem mensagens —</div>'; return; }
+  el.innerHTML = msgs.map(m => chatMsgHtml(m)).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function appendChatMessage(msg){
+  const el = document.getElementById('chat-messages');
+  if(!el) return;
+  const isEmpty = el.querySelector('.chat-empty');
+  if(isEmpty) el.innerHTML = '';
+  el.insertAdjacentHTML('beforeend', chatMsgHtml(msg));
+  el.scrollTop = el.scrollHeight;
+}
+
+async function loadChatHistory(){
+  if(!currentOccId) return;
+  try {
+    const { data } = await apiFetch(`/api/ocorrencias/${currentOccId}/mensagens`);
+    if(data) renderChatHistory(data);
+  } catch(e){}
+}
+
 function toggleChat(){
   const panel = document.getElementById('chat-panel');
   const btn   = document.getElementById('btnChat');
   const visible = panel.style.display !== 'none';
   panel.style.display = visible ? 'none' : '';
   btn.textContent = visible ? '💬 Chat' : '💬 Fechar Chat';
-  if(!visible && _socket && currentOccId) _socket.emit('join_room', currentOccId);
+  if(!visible){
+    loadChatHistory();
+    if(_socket) _socket.emit('join_room', currentOccId);
+  }
 }
 
-function sendChatMsg(){
+async function sendChatMsg(){
   const input = document.getElementById('chat-input');
   const texto = input?.value.trim();
-  if(!texto || !currentOccId || !_socket) return;
-  _socket.emit('send_message', { occId: currentOccId, texto });
+  if(!texto || !currentOccId) return;
   input.value = '';
-  if(!_socket.connected) toast('A enviar assim que ligar…','info');
+  if(_socket?.connected){
+    _socket.emit('send_message', { occId: currentOccId, texto });
+  } else {
+    try {
+      const { data, error } = await apiFetch(`/api/ocorrencias/${currentOccId}/mensagens`, {
+        method:'POST', body: JSON.stringify({ texto })
+      });
+      if(error) throw new Error(error.message||error);
+      appendChatMessage(data);
+    } catch(e){ toast(e.message,'err'); input.value = texto; }
+  }
 }
 
 // ── Service Worker (PWA) ─────────────────────────────────────────
