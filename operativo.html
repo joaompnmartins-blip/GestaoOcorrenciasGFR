@@ -22,6 +22,18 @@
       --warn:    #c89a2a;
       --danger:  #e05050;
     }
+    html.theme-light {
+      --bg:      #f0f4f0;
+      --surface: #ffffff;
+      --border:  #c8d8c8;
+      --blue:    #1e6e99;
+      --text:    #1a2a1a;
+      --muted:   #5a7a5a;
+      --success: #2e7d2e;
+      --warn:    #8a6010;
+      --danger:  #c03030;
+      --accent:  #6b7214;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body { background: var(--bg); color: var(--text); font-family: system-ui, 'Helvetica Neue', sans-serif; min-height: 100vh; }
 
@@ -30,6 +42,7 @@
     .topbar-brand { font-size: 13px; font-weight: 800; color: var(--accent); letter-spacing: .08em; text-transform: uppercase; }
     .topbar-user { font-size: 11px; color: var(--muted); }
     .btn-logout { background: none; border: 1px solid var(--border); color: var(--muted); padding: 6px 12px; border-radius: 3px; font-size: 12px; cursor: pointer; }
+    .btn-theme  { background: none; border: 1px solid var(--border); color: var(--muted); padding: 6px 10px; border-radius: 3px; font-size: 14px; cursor: pointer; line-height: 1; }
 
     /* ── OCCURRENCE HEADER ── */
     .occ-header { padding: 14px 16px 12px; background: var(--surface); border-bottom: 1px solid var(--border); }
@@ -108,8 +121,9 @@
 
 <div class="topbar">
   <div class="topbar-brand">⚡ GFR Campo</div>
-  <div style="display:flex;align-items:center;gap:10px;">
+  <div style="display:flex;align-items:center;gap:8px;">
     <span class="topbar-user" id="topbar-user"></span>
+    <button class="btn-theme" id="theme-btn" onclick="toggleTheme()" title="Tema">☀</button>
     <button class="btn-logout" onclick="doLogout()">⏻ Sair</button>
   </div>
 </div>
@@ -282,8 +296,22 @@ function renderDetalhe(){
     </div>`;
   });
 
-  html += '</div>';
+  html += `</div>
+  <div class="chat-section">
+    <div class="chat-section-hdr">
+      <div class="chat-section-title">💬 Chat</div>
+    </div>
+    <div id="chat-msgs" class="chat-msgs">
+      <div style="padding:12px;text-align:center;color:var(--muted);font-size:12px;">— Sem mensagens —</div>
+    </div>
+    <div class="chat-input-row">
+      <input id="chat-inp" type="text" placeholder="Mensagem…" onkeydown="if(event.key==='Enter')sendChatMsg()"/>
+      <button class="btn-send" onclick="sendChatMsg()">Enviar</button>
+    </div>
+  </div>`;
   document.getElementById('app').innerHTML = html;
+  // Entrar na sala de chat
+  if(_socket?.connected) _socket.emit('join_room', _currentOccId);
 }
 
 // ── Actions ──────────────────────────────────────────────────────
@@ -391,30 +419,6 @@ function sendChatMsg(){
   inp.value = '';
 }
 
-// Substituir o renderDetalhe para incluir painel de chat
-const _origRenderDetalhe = renderDetalhe;
-function renderDetalhe(){
-  _origRenderDetalhe();
-  // Injectar secção de chat se ainda não existir
-  const app = document.getElementById('app');
-  if(app && !app.querySelector('.chat-section')){
-    app.insertAdjacentHTML('beforeend', `
-      <div class="chat-section">
-        <div class="chat-section-hdr">
-          <div class="chat-section-title">💬 Chat</div>
-        </div>
-        <div id="chat-msgs" class="chat-msgs">
-          <div style="padding:12px;text-align:center;color:var(--muted);font-size:12px;">— Sem mensagens —</div>
-        </div>
-        <div class="chat-input-row">
-          <input id="chat-inp" type="text" placeholder="Mensagem…" onkeydown="if(event.key==='Enter')sendChatMsg()"/>
-          <button class="btn-send" onclick="sendChatMsg()">Enviar</button>
-        </div>
-      </div>`);
-    if(_socket?.connected) _socket.emit('join_room', _currentOccId);
-  }
-}
-
 // Auto-refresh 30s (fallback quando socket não está ligado)
 setInterval(async () => {
   if(_socketConnected) return;
@@ -434,6 +438,23 @@ document.addEventListener('visibilitychange', async () => {
     } catch(e){}
   }
 });
+
+// ── Tema claro/escuro ────────────────────────────────────────────
+function toggleTheme(){
+  const isLight = document.documentElement.classList.toggle('theme-light');
+  const btn = document.getElementById('theme-btn');
+  if(btn) btn.textContent = isLight ? '🌑' : '☀';
+  try { localStorage.setItem('op_theme', isLight ? 'light' : 'dark'); } catch(e){}
+}
+(function initTheme(){
+  try {
+    if(localStorage.getItem('op_theme') === 'light'){
+      document.documentElement.classList.add('theme-light');
+      const btn = document.getElementById('theme-btn');
+      if(btn) btn.textContent = '🌑';
+    }
+  } catch(e){}
+})();
 
 // Service Worker
 if('serviceWorker' in navigator){
