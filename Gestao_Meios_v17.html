@@ -1762,9 +1762,18 @@ async function completeLogin(authData){
   rb.style.display = '';
   document.getElementById('btn-logout').style.display = '';
   applyRoleUI();
-  if(currentRole === 'operacional' || currentRole === 'tecnico'){
+  if(currentRole === 'operacional'){
     window.location.replace('/operativo');
     return;
+  }
+  if(currentRole === 'tecnico'){
+    // Verificar se é OL em alguma ocorrência activa — se sim, fica na app completa
+    const { data } = await apiFetch('/api/ocorrencias');
+    const isOL = (data||[]).some(o => o.is_oficial_ligacao);
+    if(!isOL){
+      window.location.replace('/operativo');
+      return;
+    }
   }
   initSocket();
   await loadAllData();
