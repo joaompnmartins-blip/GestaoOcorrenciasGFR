@@ -1,10 +1,14 @@
 require('dotenv').config();
 'use strict';
-const express  = require('express');
-const { Pool } = require('pg');
-const bcrypt   = require('bcrypt');
-const jwt      = require('jsonwebtoken');
-const path     = require('path');
+const express      = require('express');
+const http         = require('http');
+const { Server: IOServer } = require('socket.io');
+const { Pool }     = require('pg');
+const bcrypt       = require('bcrypt');
+const jwt          = require('jsonwebtoken');
+const path         = require('path');
+
+let _io = null; // instância Socket.io — atribuída após rotas
 
 const app  = express();
 const pool = new Pool({
@@ -192,6 +196,7 @@ app.patch('/api/ocorrencias/:id', requireAuth('tecnico'), requireAuthForOccurren
     [b.local_ignicao || null, b.codigo_ocorrencia || null, b.subregiao || null, b.concelho || null,
      b.obs || null, b.inicio || null, b.status || null, req.params.id]
   );
+  if (_io) _io.to(req.params.id).emit('data_changed', { type: 'ocorrencia' });
   res.json({ ok: true });
 }));
 
@@ -240,14 +245,18 @@ app.post('/api/meios', requireAuth('tecnico'), requireAuthForOccurrence, wrap(as
 
 app.patch('/api/meios/:id', requireAuth('tecnico'), requireAuthForMeio, wrap(async (req, res) => {
   const b = req.body;
-  // Only update columns present in the body — partial rows from quick actions
-  // must not null out NOT NULL columns like ocorrencia_id or eq.
   const cols = MEIO_COLS.filter(c => c in b);
   if (!cols.length) return res.json({ ok: true });
   const sets = cols.map((c, i) => `${c}=$${i + 1}`).join(',');
   const vals = [...cols.map(c => b[c] ?? null), req.params.id];
   await pool.query(`UPDATE meios SET ${sets} WHERE id=$${cols.length + 1}`, vals);
   res.json({ ok: true });
+  // Notificar sala da ocorrência (best-effort, após resposta)
+  if (_io) {
+    pool.query('SELECT ocorrencia_id FROM meios WHERE id=$1', [req.params.id])
+      .then(r => { if (r.rows[0]) _io.to(r.rows[0].ocorrencia_id).emit('data_changed', { type: 'meios' }); })
+      .catch(() => {});
+  }
 }));
 
 app.delete('/api/meios/:id', requireAuth('dradj_cnsr'), wrap(async (req, res) => {
@@ -274,6 +283,11 @@ app.post('/api/meios_eventos', requireAuth('operacional'), wrap(async (req, res)
     [b.meio_id, b.ts || new Date().toISOString(), b.msg, req.user.id]
   );
   res.json({ ok: true });
+  if (_io) {
+    pool.query('SELECT ocorrencia_id FROM meios WHERE id=$1', [b.meio_id])
+      .then(r => { if (r.rows[0]) _io.to(r.rows[0].ocorrencia_id).emit('data_changed', { type: 'meios' }); })
+      .catch(() => {});
+  }
 }));
 
 // ══════════════════════════════════════════════════════════════════
@@ -493,6 +507,17 @@ app.delete('/api/ocorrencias/:id/oficiais_ligacao/:uid', requireAuth('dradj_cnsr
   res.json({ ok: true });
 }));
 
+// ══════════════════════════════════════════════════════════════════
+//  CHAT — mensagens por ocorrência
+// ══════════════════════════════════════════════════════════════════
+app.get('/api/ocorrencias/:id/mensagens', requireAuth('tecnico'), wrap(async (req, res) => {
+  const { rows } = await pool.query(
+    'SELECT * FROM mensagens WHERE ocorrencia_id=$1 ORDER BY ts ASC LIMIT 200',
+    [req.params.id]
+  );
+  res.json(rows);
+}));
+
 // ─── Proxy fogos.pt (browser directo é bloqueado por Cloudflare) ─
 app.get('/api/fogos/active', requireAuth('tecnico'), wrap(async (req, res) => {
   const r = await fetch('https://api.fogos.pt/v2/incidents/active', {
@@ -576,6 +601,19 @@ async function runMigrations() {
     )
   `);
 
+  // Tabela de mensagens de chat
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS mensagens (
+      id            SERIAL PRIMARY KEY,
+      ocorrencia_id UUID        NOT NULL REFERENCES ocorrencias(id) ON DELETE CASCADE,
+      user_id       UUID        NOT NULL REFERENCES utilizadores(id) ON DELETE CASCADE,
+      user_nome     TEXT        NOT NULL,
+      texto         TEXT        NOT NULL,
+      ts            TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_mensagens_occ ON mensagens(ocorrencia_id)`);
+
   // Seed ICNF/ANEPC 2026 data if table is empty
   const { rows: cnt } = await pool.query('SELECT COUNT(*) FROM equipas');
   if (parseInt(cnt[0].count) === 0) {
@@ -589,11 +627,60 @@ async function runMigrations() {
   }
 }
 
+// ══════════════════════════════════════════════════════════════════
+//  SOCKET.IO — chat em tempo real + notificações de dados
+// ══════════════════════════════════════════════════════════════════
+const httpServer = http.createServer(app);
+_io = new IOServer(httpServer);
+
+// Auth: verifica JWT na ligação
+_io.use((socket, next) => {
+  try {
+    const token = socket.handshake.auth?.token;
+    if (!token) return next(new Error('Não autenticado.'));
+    socket.user = jwt.verify(token, JWT_SECRET);
+    socket.user.role = normalizeRole(socket.user.role);
+    next();
+  } catch {
+    next(new Error('Sessão inválida.'));
+  }
+});
+
+_io.on('connection', socket => {
+  const { id: userId, nome } = socket.user;
+
+  // Entrar na sala de uma ocorrência (e sair das anteriores)
+  socket.on('join_room', async occId => {
+    socket.rooms.forEach(r => { if (r !== socket.id) socket.leave(r); });
+    socket.join(occId);
+    // Enviar últimas 100 mensagens como histórico
+    try {
+      const { rows } = await pool.query(
+        'SELECT * FROM mensagens WHERE ocorrencia_id=$1 ORDER BY ts ASC LIMIT 100',
+        [occId]
+      );
+      socket.emit('chat_history', rows);
+    } catch (e) { console.error('chat_history:', e.message); }
+  });
+
+  // Receber e retransmitir mensagem
+  socket.on('send_message', async ({ occId, texto }) => {
+    if (!texto?.trim() || !occId) return;
+    try {
+      const { rows } = await pool.query(
+        'INSERT INTO mensagens (ocorrencia_id, user_id, user_nome, texto) VALUES ($1,$2,$3,$4) RETURNING *',
+        [occId, userId, nome, texto.trim()]
+      );
+      _io.to(occId).emit('message', rows[0]);
+    } catch (e) { console.error('send_message:', e.message); }
+  });
+});
+
 // ─── Start ────────────────────────────────────────────────────────
 if (require.main === module) {
   runMigrations()
-    .then(() => app.listen(PORT, () => console.log(`Gestão Meios a correr na porta ${PORT}`)))
+    .then(() => httpServer.listen(PORT, () => console.log(`Gestão Ocorrências a correr na porta ${PORT}`)))
     .catch(err => { console.error('Erro na migração:', err.message); process.exit(1); });
 }
 
-module.exports = { app, pool };
+module.exports = { app, pool, httpServer };

@@ -85,6 +85,20 @@
     #toast.ok  { border-color: rgba(109,184,109,.4); color: var(--success); }
     #toast.err { border-color: rgba(224,80,80,.4);   color: var(--danger); }
     .loading { text-align: center; padding: 50px 16px; color: var(--muted); font-size: 14px; }
+    /* chat */
+    .chat-section { margin: 10px 12px 80px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+    .chat-section-hdr { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background: rgba(66,154,189,.06); border-bottom:1px solid var(--border); }
+    .chat-section-title { font-size:13px; font-weight:700; color:var(--blue); letter-spacing:.04em; text-transform:uppercase; }
+    .chat-msgs { max-height:220px; overflow-y:auto; padding:8px 14px 4px; display:flex; flex-direction:column; gap:3px; }
+    .cmsg { font-size:13px; line-height:1.5; padding:3px 0; border-bottom:1px solid rgba(37,39,32,.25); }
+    .cmsg:last-child { border-bottom:none; }
+    .cmsg-who { font-weight:700; color:var(--blue); margin-right:6px; }
+    .cmsg.mine .cmsg-who { color:var(--accent); }
+    .cmsg-time { font-size:10px; color:var(--muted); margin-right:6px; }
+    .chat-input-row { display:flex; gap:8px; padding:10px 14px; border-top:1px solid var(--border); }
+    .chat-input-row input { flex:1; background:#060c07; border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:15px; padding:12px; }
+    .chat-input-row input:focus { outline:none; border-color:var(--blue); }
+    .btn-send { padding:12px 18px; background:var(--blue); color:#fff; border:none; border-radius:4px; font-size:14px; font-weight:700; cursor:pointer; }
     .mine-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
     .ol-banner { margin: 10px 12px 0; padding: 12px 14px; background: rgba(200,154,42,.08); border: 1px solid rgba(200,154,42,.3); border-radius: 4px; font-size: 12px; color: var(--warn); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .ol-banner a { color: var(--warn); font-weight: 700; text-decoration: underline; white-space: nowrap; }
@@ -117,6 +131,7 @@
 <div class="status-bar" id="status-bar">—</div>
 <div id="toast"></div>
 
+<script src="/socket.io/socket.io.js"></script>
 <script>
 'use strict';
 // ── Auth ─────────────────────────────────────────────────────────
@@ -317,6 +332,7 @@ function toast(msg, type='ok'){
 // ── Init ─────────────────────────────────────────────────────────
 (async function init(){
   if(!guardAuth()) return;
+  initSocket();
   try {
     await loadData();
     renderApp();
@@ -326,8 +342,82 @@ function toast(msg, type='ok'){
   }
 })();
 
-// Auto-refresh 30s
+// ── Socket.io ────────────────────────────────────────────────────
+let _socket = null, _socketConnected = false;
+
+function initSocket(){
+  if(_socket) return;
+  _socket = io({ auth:{ token: getToken() }, transports:['websocket','polling'] });
+  _socket.on('connect', () => {
+    _socketConnected = true;
+    if(_currentOccId) _socket.emit('join_room', _currentOccId);
+  });
+  _socket.on('disconnect', () => { _socketConnected = false; });
+  _socket.on('data_changed', async () => {
+    try { await loadData(); if(_currentOccId) renderDetalhe(); } catch(e){}
+  });
+  _socket.on('chat_history', msgs => renderChatHistory(msgs));
+  _socket.on('message', msg => appendChatMsg(msg));
+}
+
+function renderChatHistory(msgs){
+  const el = document.getElementById('chat-msgs');
+  if(!el) return;
+  el.innerHTML = msgs.length
+    ? msgs.map(chatMsgHtml).join('')
+    : '<div style="padding:12px;text-align:center;color:var(--muted);font-size:12px;">— Sem mensagens —</div>';
+  el.scrollTop = el.scrollHeight;
+}
+
+function appendChatMsg(msg){
+  const el = document.getElementById('chat-msgs');
+  if(!el) return;
+  el.insertAdjacentHTML('beforeend', chatMsgHtml(msg));
+  el.scrollTop = el.scrollHeight;
+}
+
+function chatMsgHtml(m){
+  const time = new Date(m.ts).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});
+  const mine = m.user_id === _user?.id;
+  return `<div class="cmsg${mine?' mine':''}"><span class="cmsg-time">${time}</span><span class="cmsg-who">${esc(m.user_nome||'?')}</span>${esc(m.texto)}</div>`;
+}
+
+function sendChatMsg(){
+  const inp = document.getElementById('chat-inp');
+  const txt = inp?.value.trim();
+  if(!txt || !_currentOccId) return;
+  if(!_socket?.connected){ toast('Sem ligação ao chat.','err'); return; }
+  _socket.emit('send_message', { occId: _currentOccId, texto: txt });
+  inp.value = '';
+}
+
+// Substituir o renderDetalhe para incluir painel de chat
+const _origRenderDetalhe = renderDetalhe;
+function renderDetalhe(){
+  _origRenderDetalhe();
+  // Injectar secção de chat se ainda não existir
+  const app = document.getElementById('app');
+  if(app && !app.querySelector('.chat-section')){
+    app.insertAdjacentHTML('beforeend', `
+      <div class="chat-section">
+        <div class="chat-section-hdr">
+          <div class="chat-section-title">💬 Chat</div>
+        </div>
+        <div id="chat-msgs" class="chat-msgs">
+          <div style="padding:12px;text-align:center;color:var(--muted);font-size:12px;">— Sem mensagens —</div>
+        </div>
+        <div class="chat-input-row">
+          <input id="chat-inp" type="text" placeholder="Mensagem…" onkeydown="if(event.key==='Enter')sendChatMsg()"/>
+          <button class="btn-send" onclick="sendChatMsg()">Enviar</button>
+        </div>
+      </div>`);
+    if(_socket?.connected) _socket.emit('join_room', _currentOccId);
+  }
+}
+
+// Auto-refresh 30s (fallback quando socket não está ligado)
 setInterval(async () => {
+  if(_socketConnected) return;
   try {
     await loadData();
     if(_currentOccId) renderDetalhe();
