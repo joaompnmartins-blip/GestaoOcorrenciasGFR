@@ -1319,7 +1319,12 @@ async function apiFetch(path, options = {}){
     if(!isOnline){ isOnline = true; updateSyncBadge(); scheduleSyncRetry(); }
     const body = await res.json();
     if(!res.ok){
-      if(res.status === 401){ sessionStorage.removeItem('gfr_token'); showAuthOverlay(); }
+      if(res.status === 401){
+        // Só disparar logout uma vez — token pode já ter sido removido por pedido paralelo
+        const hadToken = !!sessionStorage.getItem('gfr_token');
+        sessionStorage.removeItem('gfr_token');
+        if(hadToken) showAuthOverlay();
+      }
       return { data: null, error: { message: body.error || 'Erro desconhecido' } };
     }
     return { data: body, error: null };
@@ -1335,6 +1340,11 @@ function showAuthOverlay(){
   destroySocket();
   // Limpar caches de sessão
   _tecnicos=[]; _fieldUsers=[]; _tlData=[]; _tlFilter='all';
+  // Limpar IDB para o próximo utilizador não herdar dados do anterior
+  idbSet('idb_cache','ocorrencias',[]).catch(()=>{});
+  idbSet('idb_cache','teams',[]).catch(()=>{});
+  idbSet('idb_cache','occEventos',{}).catch(()=>{});
+  idbSet('idb_cache','user',null).catch(()=>{});
   // Esconder e limpar painel de Oficiais de Ligação
   const oficPanel=document.getElementById('ofic-panel');
   if(oficPanel) oficPanel.style.display='none';
