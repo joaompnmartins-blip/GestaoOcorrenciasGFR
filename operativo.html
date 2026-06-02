@@ -34,6 +34,24 @@
       --danger:  #c03030;
       --accent:  #6b7214;
     }
+    /* Overrides explícitos modo claro */
+    html.theme-light body                    { background: var(--bg); color: var(--text); }
+    html.theme-light .topbar                 { background: #ffffff; box-shadow: 0 1px 0 var(--border); }
+    html.theme-light .occ-header             { background: #ffffff; }
+    html.theme-light .meio-card              { background: #ffffff; }
+    html.theme-light .meio-actions           { background: rgba(0,0,0,.04); }
+    html.theme-light .btn-obs                { background: #ffffff; color: var(--text); border-color: var(--border); }
+    html.theme-light .occ-item               { background: #ffffff; }
+    html.theme-light .obs-box                { background: #ffffff; }
+    html.theme-light .obs-textarea           { background: #ffffff; border-color: var(--border); color: var(--text); }
+    html.theme-light .obs-textarea::placeholder { color: var(--muted); }
+    html.theme-light .chat-section           { background: #ffffff; }
+    html.theme-light .chat-input-row         { background: #ffffff; }
+    html.theme-light .chat-input-row input   { background: #ffffff; border-color: var(--border); color: var(--text); }
+    html.theme-light .chat-input-row input::placeholder { color: var(--muted); }
+    html.theme-light .cmsg                   { border-bottom-color: rgba(0,0,0,.1); }
+    html.theme-light .status-bar             { background: var(--bg); }
+    html.theme-light #toast                  { box-shadow: 0 4px 12px rgba(0,0,0,.1); }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body { background: var(--bg); color: var(--text); font-family: system-ui, 'Helvetica Neue', sans-serif; min-height: 100vh; }
 
