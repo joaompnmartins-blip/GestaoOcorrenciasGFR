@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>GFR — Campo</title>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#8C961C"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <style>
+    :root {
+      --bg:      #080d0b;
+      --surface: #0d1410;
+      --border:  #1e2b1f;
+      --accent:  #8C961C;
+      --blue:    #429ABD;
+      --text:    #d4e5d0;
+      --muted:   #4d6650;
+      --success: #6db86d;
+      --warn:    #c89a2a;
+      --danger:  #e05050;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg); color: var(--text); font-family: system-ui, 'Helvetica Neue', sans-serif; min-height: 100vh; }
+
+    /* ── TOPBAR ── */
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--surface); border-bottom: 2px solid var(--accent); position: sticky; top: 0; z-index: 10; }
+    .topbar-brand { font-size: 13px; font-weight: 800; color: var(--accent); letter-spacing: .08em; text-transform: uppercase; }
+    .topbar-user { font-size: 11px; color: var(--muted); }
+    .btn-logout { background: none; border: 1px solid var(--border); color: var(--muted); padding: 6px 12px; border-radius: 3px; font-size: 12px; cursor: pointer; }
+
+    /* ── OCCURRENCE HEADER ── */
+    .occ-header { padding: 14px 16px 12px; background: var(--surface); border-bottom: 1px solid var(--border); }
+    .occ-name { font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; line-height: 1.2; }
+    .occ-meta { font-size: 12px; color: var(--muted); margin-top: 5px; }
+    .occ-back { font-size: 12px; color: var(--blue); cursor: pointer; margin-bottom: 8px; display: inline-block; }
+
+    /* ── MEIO CARDS ── */
+    .meios-list { padding: 10px 12px 80px; }
+    .meio-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
+    .meio-card.mine { border-left: 4px solid var(--accent); }
+    .meio-card.other { opacity: .55; }
+    .meio-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; }
+    .meio-name { font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; }
+    .estado-badge { font-size: 10px; padding: 3px 9px; border-radius: 20px; font-weight: 700; white-space: nowrap; }
+    .e-operacao    { background: rgba(109,184,109,.15); color: var(--success); }
+    .e-transito    { background: rgba(66,154,189,.15);  color: var(--blue); }
+    .e-descanso    { background: rgba(200,154,42,.15);  color: var(--warn); }
+    .e-previsto    { background: rgba(152,112,208,.12); color: #b890e8; }
+    .e-desmobilizado { background: rgba(45,61,47,.4);   color: var(--muted); }
+    .meio-info { padding: 0 14px 10px; font-size: 12px; color: var(--muted); line-height: 1.9; }
+    .meio-actions { display: flex; flex-wrap: wrap; gap: 10px; padding: 12px 14px; background: rgba(0,0,0,.18); border-top: 1px solid var(--border); }
+    .btn-act { flex: 1; min-width: 110px; padding: 15px 8px; border: none; border-radius: 4px; font-size: 14px; font-weight: 800; cursor: pointer; letter-spacing: .04em; text-transform: uppercase; transition: opacity .1s; }
+    .btn-act:active { opacity: .65; }
+    .btn-op      { background: var(--success); color: #060f06; }
+    .btn-transit { background: var(--blue);    color: #fff; }
+    .btn-obs     { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+
+    /* ── OCCURRENCE LIST ── */
+    .occ-list { padding: 12px; }
+    .occ-item { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--blue); border-radius: 4px; padding: 16px; margin-bottom: 10px; cursor: pointer; active: opacity:.7; }
+    .occ-item:active { opacity: .7; }
+    .occ-item-name { font-size: 17px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
+    .occ-item-meta { font-size: 12px; color: var(--muted); margin-top: 5px; }
+
+    /* ── OBS OVERLAY ── */
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.88); z-index: 100; align-items: flex-end; justify-content: center; padding: 0; }
+    .overlay.open { display: flex; }
+    .obs-box { background: var(--surface); border-top: 1px solid var(--border); border-radius: 8px 8px 0 0; width: 100%; max-width: 540px; padding: 20px 20px 32px; }
+    .obs-title { font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; color: var(--accent); }
+    .obs-textarea { width: 100%; background: #060c07; border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 16px; padding: 12px; resize: none; min-height: 110px; line-height: 1.5; }
+    .obs-textarea:focus { outline: none; border-color: var(--accent); }
+    .obs-btns { display: flex; gap: 10px; margin-top: 14px; }
+    .btn-cancel { flex: 1; padding: 15px; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 4px; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .btn-save { flex: 2; padding: 15px; background: var(--accent); color: #060f06; border: none; border-radius: 4px; font-size: 14px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: .05em; }
+    .btn-save:active { opacity: .8; }
+
+    /* ── MISC ── */
+    .empty { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 15px; line-height: 1.6; }
+    .status-bar { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; padding: 8px; font-size: 11px; color: var(--muted); background: var(--bg); border-top: 1px solid var(--border); }
+    #toast { position: fixed; bottom: 36px; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--surface); border: 1px solid var(--border); padding: 10px 22px; border-radius: 4px; font-size: 13px; opacity: 0; transition: all .25s; z-index: 200; white-space: nowrap; }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    #toast.ok  { border-color: rgba(109,184,109,.4); color: var(--success); }
+    #toast.err { border-color: rgba(224,80,80,.4);   color: var(--danger); }
+    .loading { text-align: center; padding: 50px 16px; color: var(--muted); font-size: 14px; }
+    .mine-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">⚡ GFR Campo</div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span class="topbar-user" id="topbar-user"></span>
+    <button class="btn-logout" onclick="doLogout()">⏻ Sair</button>
+  </div>
+</div>
+
+<div id="app"><div class="loading">A carregar…</div></div>
+
+<!-- Obs overlay -->
+<div class="overlay" id="obs-overlay" onclick="if(event.target===this)closeObs()">
+  <div class="obs-box">
+    <div class="obs-title">📝 Observação</div>
+    <textarea class="obs-textarea" id="obs-text" placeholder="Escreva a observação…" rows="4"></textarea>
+    <div class="obs-btns">
+      <button class="btn-cancel" onclick="closeObs()">Cancelar</button>
+      <button class="btn-save" onclick="saveObs()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar" id="status-bar">—</div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+// ── Auth ─────────────────────────────────────────────────────────
+const TOKEN_KEY = 'gfr_token';
+let _user = null, _role = null;
+
+function getToken(){ return sessionStorage.getItem(TOKEN_KEY); }
+
+function guardAuth(){
+  const token = getToken();
+  if(!token){ location.replace('/'); return false; }
+  try {
+    const p = JSON.parse(atob(token.split('.')[1]));
+    if(p.exp * 1000 < Date.now()){ sessionStorage.removeItem(TOKEN_KEY); location.replace('/'); return false; }
+    _user = { id: p.id };
+    _role = p.role;
+    document.getElementById('topbar-user').textContent = (p.nome||'').split(' ')[0].toUpperCase();
+    return true;
+  } catch(e){ location.replace('/'); return false; }
+}
+
+function doLogout(){ sessionStorage.removeItem(TOKEN_KEY); location.replace('/'); }
+
+// ── API ──────────────────────────────────────────────────────────
+async function api(path, opts = {}){
+  const res = await fetch(path, {
+    ...opts,
+    headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+getToken() },
+  });
+  if(res.status === 401){ doLogout(); throw new Error('Sessão expirada'); }
+  const body = await res.json().catch(() => ({}));
+  if(!res.ok) throw new Error(body.error || res.statusText);
+  return body;
+}
+
+// ── State ────────────────────────────────────────────────────────
+let _ocorrencias = [], _meios = [], _currentOccId = null;
+
+async function loadData(){
+  [_ocorrencias, _meios] = await Promise.all([api('/api/ocorrencias'), api('/api/meios')]);
+  _ocorrencias = _ocorrencias.filter(o => o.status === 'active');
+  const t = new Date().toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('status-bar').textContent = `Actualizado às ${t}`;
+}
+
+// ── Helpers ──────────────────────────────────────────────────────
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+const ESTADO = {
+  operacao:     { l:'EM OPERAÇÃO', cls:'e-operacao' },
+  transito:     { l:'EM TRÂNSITO', cls:'e-transito' },
+  descanso:     { l:'DESCANSO',    cls:'e-descanso' },
+  previsto:     { l:'PREVISTO',    cls:'e-previsto' },
+  desmobilizado:{ l:'DESMOB.',     cls:'e-desmobilizado' },
+};
+
+function isMine(m){
+  return (m.meios_operativos||[]).some(o => o.utilizador_id === _user.id);
+}
+
+// ── Render ───────────────────────────────────────────────────────
+function renderApp(){
+  if(!_ocorrencias.length){
+    document.getElementById('app').innerHTML =
+      '<div class="empty">Sem ocorrências activas atribuídas.<br><br><small>Certifique-se que está incluído num meio.</small></div>';
+    return;
+  }
+  if(_ocorrencias.length === 1){
+    _currentOccId = _ocorrencias[0].id;
+    renderDetalhe();
+  } else {
+    renderOccList();
+  }
+}
+
+function renderOccList(){
+  _currentOccId = null;
+  document.getElementById('app').innerHTML =
+    '<div class="occ-list">' +
+    _ocorrencias.map(o => `
+      <div class="occ-item" onclick="selectOcc('${o.id}')">
+        <div class="occ-item-name">${esc(o.local_ignicao||'—')}</div>
+        <div class="occ-item-meta">${esc(o.codigo_ocorrencia||'')}${o.concelho?' · '+esc(o.concelho):''}</div>
+      </div>`).join('') +
+    '</div>';
+}
+
+function selectOcc(id){ _currentOccId = id; renderDetalhe(); }
+
+function renderDetalhe(){
+  const o = _ocorrencias.find(x => x.id === _currentOccId);
+  if(!o) return;
+  const occMeios = _meios.filter(m => m.ocorrencia_id === _currentOccId);
+  // My meios first, then others
+  const mine  = occMeios.filter(m => isMine(m));
+  const other = occMeios.filter(m => !isMine(m));
+  const sorted = [...mine, ...other];
+
+  let html = `<div class="occ-header">
+    ${_ocorrencias.length > 1 ? `<span class="occ-back" onclick="renderOccList()">← Ocorrências</span>` : ''}
+    <div class="occ-name">${esc(o.local_ignicao||'—')}</div>
+    <div class="occ-meta">${o.codigo_ocorrencia?esc(o.codigo_ocorrencia)+' · ':''}${esc(o.concelho||'')} · ${occMeios.length} meio${occMeios.length!==1?'s':''}</div>
+  </div>
+  <div class="meios-list">`;
+
+  sorted.forEach(m => {
+    const mine_m = isMine(m);
+    const est = ESTADO[m.estado] || { l: m.estado||'—', cls:'e-desmobilizado' };
+    const ops = (m.meios_operativos||[]).map(o => o.nome).filter(Boolean).join(', ');
+
+    let actionsHtml = '';
+    if(mine_m){
+      if(m.estado === 'previsto'){
+        actionsHtml += `<button class="btn-act btn-transit" onclick="doAction('transit','${m.id}')">▶ Activar Trânsito</button>`;
+      }
+      if(m.estado !== 'operacao' && m.estado !== 'previsto'){
+        actionsHtml += `<button class="btn-act btn-op" onclick="doAction('op','${m.id}')">▶ Activar Op.</button>`;
+      }
+      actionsHtml += `<button class="btn-act btn-obs" onclick="openObs('${m.id}')">📝 Obs.</button>`;
+    }
+
+    html += `<div class="meio-card ${mine_m?'mine':'other'}">
+      <div class="meio-head">
+        <div>
+          ${mine_m ? '<div class="mine-label">O meu meio</div>' : ''}
+          <div class="meio-name">${esc(m.eq||'—')}</div>
+        </div>
+        <span class="estado-badge ${est.cls}">${est.l}</span>
+      </div>
+      <div class="meio-info">
+        ${m.tipo?`<div>Tipo: ${esc(m.tipo)}</div>`:''}
+        ${m.setor?`<div>Setor: ${esc(m.setor)}</div>`:''}
+        ${m.responsavel?`<div>Resp.: ${esc(m.responsavel)}</div>`:''}
+        ${ops?`<div>Equipa: ${esc(ops)}</div>`:''}
+        ${m.missao?`<div>Missão: ${esc(m.missao)}</div>`:''}
+      </div>
+      ${actionsHtml?`<div class="meio-actions">${actionsHtml}</div>`:''}
+    </div>`;
+  });
+
+  html += '</div>';
+  document.getElementById('app').innerHTML = html;
+}
+
+// ── Actions ──────────────────────────────────────────────────────
+async function doAction(type, meioId){
+  const estadoMap = { op:'operacao', transit:'transito' };
+  try {
+    await api(`/api/meios/${meioId}`, { method:'PATCH', body: JSON.stringify({ estado: estadoMap[type] }) });
+    toast('Estado actualizado!','ok');
+    await loadData();
+    if(_currentOccId) renderDetalhe();
+  } catch(e){ toast(e.message,'err'); }
+}
+
+let _obsTarget = null;
+function openObs(meioId){
+  _obsTarget = meioId;
+  document.getElementById('obs-text').value = '';
+  document.getElementById('obs-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('obs-text').focus(), 200);
+}
+function closeObs(){
+  _obsTarget = null;
+  document.getElementById('obs-overlay').classList.remove('open');
+}
+async function saveObs(){
+  const txt = document.getElementById('obs-text').value.trim();
+  if(!txt){ toast('Escreva uma observação.','err'); return; }
+  try {
+    await api('/api/meios_eventos', { method:'POST', body: JSON.stringify({ meio_id:_obsTarget, msg:txt }) });
+    closeObs();
+    toast('Observação guardada!','ok');
+    await loadData();
+    if(_currentOccId) renderDetalhe();
+  } catch(e){ toast(e.message,'err'); }
+}
+
+// ── Toast ────────────────────────────────────────────────────────
+let _toastTimer;
+function toast(msg, type='ok'){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'show '+type;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.className='', 2800);
+}
+
+// ── Init ─────────────────────────────────────────────────────────
+(async function init(){
+  if(!guardAuth()) return;
+  try {
+    await loadData();
+    renderApp();
+  } catch(e){
+    document.getElementById('app').innerHTML =
+      `<div class="empty">Erro ao carregar dados.<br><small>${e.message}</small></div>`;
+  }
+})();
+
+// Auto-refresh 30s
+setInterval(async () => {
+  try {
+    await loadData();
+    if(_currentOccId) renderDetalhe();
+    else if(_ocorrencias.length) renderOccList();
+  } catch(e){}
+}, 30_000);
+
+// Page Visibility: refresh when tab regains focus
+document.addEventListener('visibilitychange', async () => {
+  if(document.visibilityState === 'visible'){
+    try {
+      await loadData();
+      if(_currentOccId) renderDetalhe();
+    } catch(e){}
+  }
+});
+
+// Service Worker
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+}
+</script>
+</body>
+</html>

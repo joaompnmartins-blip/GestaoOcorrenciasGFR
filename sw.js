@@ -5,6 +5,7 @@ const CACHE = 'gestao-occ-v2';
 const PRECACHE = [
   '/manifest.json',
   '/icons/icon.svg',
+  '/operativo',
 ];
 
 // ── Install ──────────────────────────────────────────────────────

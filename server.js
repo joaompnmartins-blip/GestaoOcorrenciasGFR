@@ -19,6 +19,7 @@ const PORT        = process.env.PORT || 3000;
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(__dirname));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'Gestao_Meios_v17.html')));
+app.get('/operativo', (req, res) => res.sendFile(path.join(__dirname, 'operativo.html')));
 
 // ─── Role ordering ────────────────────────────────────────────────
 const ROLE_ORDER = ['tecnico', 'operacional', 'dradj_cnsr', 'administrador'];
